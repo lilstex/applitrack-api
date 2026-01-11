@@ -110,6 +110,13 @@ export class UpdateBasicInfoDto {
   @IsString({ each: true })
   skills?: string[];
 
+  @ApiPropertyOptional({ type: [ExperienceDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExperienceDto)
+  workExperience?: ExperienceDto[];
+
   @ApiPropertyOptional({ type: [EducationDto] })
   @IsOptional()
   @IsArray()
