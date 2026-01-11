@@ -17,7 +17,7 @@ export class PaystackService {
         {
           email,
           amount: amount * 100,
-          callback_url: `${process.env.FRONTEND_URL}/dashboard?payment=success`,
+          callback_url: `https://applitrack.emmanuelmbagwu.net/dashboard?payment=success`,
           metadata: {
             userId,
             amount,

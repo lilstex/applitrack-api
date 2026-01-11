@@ -36,7 +36,7 @@ async function bootstrap() {
     .setDescription('AppliTrack API Docs')
     .setVersion('1.0')
     .addServer('http://localhost:2200/', 'Local environment')
-    .addServer('https://applitrack-api.onrender.com/', 'Production')
+    .addServer('https://applitrack-api.emmanuelmbagwu.net/', 'Production')
     .addBearerAuth()
     .build();
 
