@@ -49,6 +49,7 @@ export class StripeService {
       return { url: session.url };
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException('Stripe session creation failed');
     }
   }
