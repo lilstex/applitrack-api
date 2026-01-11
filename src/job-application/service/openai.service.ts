@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import { Model } from 'mongoose';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { User } from 'src/user/schema/user.schema';
@@ -51,24 +51,19 @@ export class OpenAIService {
   }
 
   async generateTailoredContent(masterProfile: User, jobDescription: string) {
-    console.log(masterProfile);
     const COST_PER_CV = process.env.COST_PER_CV
       ? parseInt(process.env.COST_PER_CV)
       : 10;
 
-    // Atomic deduction
-    const user = await this.userModel.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(masterProfile._id),
-        credits: { $gte: COST_PER_CV },
-      },
-      { $inc: { credits: -COST_PER_CV } },
-      { new: true },
-    );
-
-    if (!user) {
+    // Validate operations
+    if (masterProfile.credits < COST_PER_CV) {
       throw new BadRequestException('Insufficient credits. Please top up.');
     }
+
+    // Update credits - no await needed for assignment
+    masterProfile.credits -= COST_PER_CV;
+    await masterProfile.save();
+
     try {
       const prompt = `
         You are a senior Technical Recruiter and Resume Optimization Expert.
