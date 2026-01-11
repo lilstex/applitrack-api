@@ -209,7 +209,7 @@ export class PaymentController {
 
     if (topUpDto.gateway === PaymentGateway.PAYSTACK) {
       return this.paystackService.initializeTransaction(
-        userId,
+        String(userId),
         email,
         plan.priceNgn,
         plan.credits,
@@ -218,7 +218,7 @@ export class PaymentController {
 
     if (topUpDto.gateway === PaymentGateway.STRIPE) {
       return this.stripeService.createCheckoutSession(
-        userId,
+        String(userId),
         email,
         plan.stripePriceId,
         plan.credits,
