@@ -67,6 +67,22 @@ export class ProfileService {
     return user.save();
   }
 
+  async updateProfile(userId: string, updateData: UpdateBasicInfoDto) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    // Handle Work Experience Sorting if AI returns unsorted data
+    if (updateData.workExperience) {
+      updateData.workExperience.sort((a, b) =>
+        this.compareDates(a.endDate, b.endDate),
+      );
+    }
+
+    // Update
+    Object.assign(user, updateData);
+    return user.save();
+  }
+
   async removeExperience(userId: string, expId: string) {
     return this.userModel.findByIdAndUpdate(
       userId,

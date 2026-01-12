@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   ApplicationHistory,
@@ -18,10 +18,11 @@ import { PaymentModule } from 'src/payment/payment.module';
       { name: ApplicationHistory.name, schema: ApplicationHistorySchema },
       { name: User.name, schema: UserSchema },
     ]),
-    UserModule,
+    forwardRef(() => UserModule),
     PaymentModule,
   ],
   controllers: [ApplicationController],
   providers: [ApplicationService, OpenAIService, PdfService],
+  exports: [OpenAIService],
 })
 export class JobApplicationModule {}

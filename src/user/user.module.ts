@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schema/user.schema';
 import { ProfileController } from './controller/profile.controller';
@@ -8,6 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './controller/auth.controller';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'src/security/middleware/jwt.strategy';
+import { JobApplicationModule } from 'src/job-application/job-application.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { JwtStrategy } from 'src/security/middleware/jwt.strategy';
         };
       },
     }),
+    forwardRef(() => JobApplicationModule),
   ],
   controllers: [AuthController, ProfileController],
   providers: [AuthService, ProfileService, JwtStrategy],
