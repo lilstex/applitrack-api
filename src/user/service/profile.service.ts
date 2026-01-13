@@ -72,14 +72,28 @@ export class ProfileService {
     if (!user) throw new NotFoundException('User not found');
 
     // Handle Work Experience Sorting if AI returns unsorted data
-    if (updateData.workExperience) {
+    if (updateData.workExperience && updateData.workExperience.length > 0) {
       updateData.workExperience.sort((a, b) =>
         this.compareDates(a.endDate, b.endDate),
       );
     }
 
-    // Update
-    Object.assign(user, updateData);
+    // Update only fields that have values
+    Object.keys(updateData).forEach((key) => {
+      const value = updateData[key];
+
+      // For arrays, only update if it's a non-empty array
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          user[key] = value;
+        }
+      }
+      // For objects and strings, update if truthy (not null/undefined/empty string)
+      else if (value !== undefined && value !== null && value !== '') {
+        user[key] = value;
+      }
+    });
+
     return user.save();
   }
 
