@@ -2,7 +2,6 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -37,19 +36,14 @@ export class AuthService {
   }
 
   async login(email: string, pass: string) {
-    try {
-      const user = await this.userModel.findOne({ email }).select('+password');
-      if (!user || !(await bcrypt.compare(pass, user.password))) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      const payload = { id: user._id, email: user.email };
-      return {
-        access_token: await this.jwtService.signAsync(payload),
-      };
-    } catch (error) {
-      console.log(error);
-      throw new InternalServerErrorException('Server Error');
+    const user = await this.userModel.findOne({ email }).select('+password');
+    if (!user || !(await bcrypt.compare(pass, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
     }
+
+    const payload = { id: user._id, email: user.email };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
   }
 }
