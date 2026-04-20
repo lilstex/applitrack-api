@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  elevate-cv-api:
+    build: .
+    image: ${DOCKER_IMAGE}:${BUILD_NUMBER}
+    container_name: elevate-cv-api
+    restart: always
+    ports:
+      - "2200:2200"
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=256
+      - DATABASE_URI=${DATABASE_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TOKEN_VALIDATION_DURATION=${TOKEN_VALIDATION_DURATION}
+      - COST_PER_CV=${COST_PER_CV}
+      - PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+
+    # CRITICAL for low-RAM
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - elevate-network
+
+networks:
+  elevate-network:
+    driver: bridge

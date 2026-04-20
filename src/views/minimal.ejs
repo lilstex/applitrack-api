@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    @page { margin: 0; size: A4; }
+    html, body { margin: 0; padding: 0; background: white; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, Helvetica, sans-serif;
+      color: #1c1c1e;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 60px 68px 72px 68px;
+      background: white;
+    }
+
+    /* ── Name ── */
+    header { margin-bottom: 10px; }
+    header h1 {
+      font-size: 44px;
+      font-weight: 300;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      margin: 0 0 8px 0;
+      color: #0d0d0d;
+    }
+    .contact-row {
+      display: flex;
+      gap: 20px;
+      font-size: 11px;
+      color: #6e6e73;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+
+    /* ── Profile block ── */
+    .profile-text {
+      font-size: 14px;
+      line-height: 1.85;
+      color: #3a3a3c;
+      max-width: 55ch;
+      margin: 0 0 28px 0;
+    }
+
+    /* ── Thin rules ── */
+    .rule { height: 1px; background: #e5e5ea; margin-bottom: 28px; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: #8e8e93;
+      margin-bottom: 18px;
+    }
+
+    /* ── Experience: date/company left, role/bullets right ── */
+    .exp-block {
+      display: grid;
+      grid-template-columns: 148px 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+    .exp-meta { padding-top: 1px; }
+    .exp-dates {
+      font-size: 10.5px;
+      color: #8e8e93;
+      line-height: 1.6;
+    }
+    .exp-company {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #3a3a3c;
+      margin-top: 4px;
+    }
+    .exp-role { font-size: 14px; font-weight: 600; margin: 0 0 6px 0; color: #1c1c1e; }
+    .exp-bullets { margin: 0; padding: 0; list-style: none; }
+    .exp-bullets li {
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: #48484a;
+      margin-bottom: 4px;
+      padding-left: 12px;
+      border-left: 2px solid #e5e5ea;
+    }
+
+    /* ── Bottom 3-col grid ── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 28px;
+    }
+    .skill-item { font-size: 12px; line-height: 1.85; color: #48484a; }
+    .edu-block, .cert-block { margin-bottom: 12px; }
+    .edu-degree, .cert-title { font-size: 12px; font-weight: 600; color: #1c1c1e; }
+    .edu-meta, .cert-meta { font-size: 11px; color: #8e8e93; }
+
+    .section-gap { margin-bottom: 26px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1><%= user.fullName %></h1>
+  </header>
+  <div class="contact-row">
+    <span><%= user.email %></span>
+    <% if (user.phoneNumber) { %><span><%= user.phoneNumber %></span><% } %>
+    <% if (user.linkedinUrl) { %><span><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></span><% } %>
+  </div>
+
+  <% if (ai.professionalSummary) { %>
+    <p class="profile-text"><%= ai.professionalSummary %></p>
+  <% } %>
+
+  <div class="rule"></div>
+
+  <% if (ai.refinedExperience && ai.refinedExperience.length > 0) { %>
+    <div class="section-gap">
+      <div class="section-label">Experience</div>
+      <% ai.refinedExperience.forEach(function(exp) { %>
+        <div class="exp-block">
+          <div class="exp-meta">
+            <div class="exp-dates"><%= exp.startDate %><br/><%= exp.endDate %></div>
+            <div class="exp-company"><%= exp.company %></div>
+          </div>
+          <div>
+            <div class="exp-role"><%= exp.role %></div>
+            <ul class="exp-bullets">
+              <% (exp.highlights || []).forEach(function(h) { %>
+                <li><%= h %></li>
+              <% }); %>
+            </ul>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <div class="rule"></div>
+
+  <div class="bottom-grid">
+    <% if (ai.relevantSkills && ai.relevantSkills.length > 0) { %>
+      <div>
+        <div class="section-label">Skills</div>
+        <% ai.relevantSkills.forEach(function(s) { %>
+          <div class="skill-item"><%= s %></div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <% if (ai.education && ai.education.length > 0) { %>
+      <div>
+        <div class="section-label">Education</div>
+        <% ai.education.forEach(function(edu) { %>
+          <div class="edu-block">
+            <div class="edu-degree"><%= edu.degree %></div>
+            <div class="edu-meta"><%= edu.school %></div>
+            <div class="edu-meta"><%= edu.year %></div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <% if (ai.certifications && ai.certifications.length > 0) { %>
+      <div>
+        <div class="section-label">Certifications</div>
+        <% ai.certifications.forEach(function(cert) { %>
+          <div class="cert-block">
+            <div class="cert-title"><%= cert.title %></div>
+            <div class="cert-meta"><%= cert.issuer %></div>
+            <div class="cert-meta"><%= cert.date %></div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+</div>
+</body>
+</html>

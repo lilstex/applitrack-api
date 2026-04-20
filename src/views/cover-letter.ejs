@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    @page { margin: 0; size: A4; }
+    html, body { margin: 0; padding: 0; background: white; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      color: #1e293b;
+      font-size: 13.5px;
+      line-height: 1.7;
+      background: white;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 0;
+      background: white;
+      position: relative;
+    }
+
+    /* ── Top accent bar ── */
+    .top-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      width: 100%;
+    }
+
+    /* ── Header area ── */
+    .letter-header {
+      padding: 38px 60px 28px 60px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .sender-name {
+      font-family: 'Inter', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .sender-contact {
+      font-family: 'Inter', sans-serif;
+      font-size: 10.5px;
+      color: #64748b;
+      line-height: 1.8;
+    }
+    .sender-contact span {
+      display: inline-block;
+      margin-right: 14px;
+    }
+    .letter-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: #6d28d9;
+      text-align: right;
+    }
+
+    /* ── Letter body ── */
+    .letter-body {
+      padding: 38px 60px 52px 60px;
+    }
+
+    .date-line {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 28px;
+      letter-spacing: 0.04em;
+    }
+
+    .letter-text {
+      font-size: 13.5px;
+      line-height: 1.85;
+      color: #1e293b;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* ── Footer ── */
+    .letter-footer {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: center;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-bar"></div>
+
+  <div class="letter-header">
+    <div>
+      <div class="sender-name"><%= user.fullName %></div>
+      <div class="sender-contact">
+        <span><%= user.email %></span>
+        <% if (user.phoneNumber) { %><span><%= user.phoneNumber %></span><% } %>
+        <% if (user.linkedinUrl) { %><span><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></span><% } %>
+      </div>
+    </div>
+    <div class="letter-label">Cover Letter</div>
+  </div>
+
+  <div class="letter-body">
+    <div class="date-line">
+      <%= new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+    </div>
+
+    <div class="letter-text"><%= coverLetter %></div>
+
+    <div class="letter-footer">
+      Prepared for <%= companyName %> · <%= jobTitle %>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

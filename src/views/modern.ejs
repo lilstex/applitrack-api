@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    @page { margin: 0; size: A4; }
+    html, body { margin: 0; padding: 0; background: white; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 42px 48px 56px 48px;
+      background: white;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 5px solid #6d28d9;
+      padding-bottom: 22px;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: 38px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin: 0 0 14px 0;
+      color: #0f172a;
+    }
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .contact-row .item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .contact-row .icon { color: #6d28d9; font-size: 11px; }
+
+    /* ── Layout ── */
+    .body-grid {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 36px;
+    }
+
+    /* ── Section headings ── */
+    .section-label {
+      font-size: 8.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      color: #6d28d9;
+      margin-bottom: 10px;
+    }
+
+    /* ── Profile ── */
+    .profile-text {
+      font-size: 13.5px;
+      line-height: 1.75;
+      color: #334155;
+      margin: 0;
+    }
+
+    /* ── Experience ── */
+    .exp-block { margin-bottom: 22px; page-break-inside: avoid; }
+    .exp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2px;
+    }
+    .exp-role { font-size: 15px; font-weight: 700; color: #0f172a; margin: 0; }
+    .exp-dates { font-size: 9.5px; font-weight: 600; color: #94a3b8; letter-spacing: 0.04em; }
+    .exp-company {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #6d28d9;
+      margin-bottom: 8px;
+    }
+    .exp-bullets { margin: 0; padding: 0; list-style: none; }
+    .exp-bullets li {
+      display: flex;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #334155;
+      line-height: 1.6;
+      margin-bottom: 4px;
+    }
+    .bullet-arrow { color: #6d28d9; font-weight: 700; flex-shrink: 0; }
+
+    /* ── Skills (sidebar) ── */
+    .skills-box {
+      background: #f5f3ff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .skills-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+    .skill-tag {
+      background: white;
+      border: 1px solid #ddd6fe;
+      border-radius: 4px;
+      padding: 3px 9px;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #1e1b4b;
+    }
+
+    /* ── Education / Certs ── */
+    .edu-block, .cert-block { margin-bottom: 12px; }
+    .edu-degree, .cert-title { font-size: 12.5px; font-weight: 700; color: #0f172a; }
+    .edu-meta, .cert-meta { font-size: 10.5px; color: #64748b; }
+
+    .section-gap { margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1><%= user.fullName %></h1>
+    <div class="contact-row">
+      <span class="item"><span class="icon">✉</span> <%= user.email %></span>
+      <% if (user.phoneNumber) { %>
+        <span class="item"><span class="icon">✆</span> <%= user.phoneNumber %></span>
+      <% } %>
+      <% if (user.linkedinUrl) { %>
+        <span class="item"><span class="icon">in</span> <%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></span>
+      <% } %>
+    </div>
+  </header>
+
+  <div class="body-grid">
+
+    <!-- Main column -->
+    <div>
+      <% if (ai.professionalSummary) { %>
+        <div class="section-gap">
+          <div class="section-label">Profile</div>
+          <p class="profile-text"><%= ai.professionalSummary %></p>
+        </div>
+      <% } %>
+
+      <% if (ai.refinedExperience && ai.refinedExperience.length > 0) { %>
+        <div>
+          <div class="section-label">Experience</div>
+          <% ai.refinedExperience.forEach(function(exp) { %>
+            <div class="exp-block">
+              <div class="exp-header">
+                <div class="exp-role"><%= exp.role %></div>
+                <div class="exp-dates"><%= exp.startDate %> — <%= exp.endDate %></div>
+              </div>
+              <div class="exp-company"><%= exp.company %></div>
+              <ul class="exp-bullets">
+                <% (exp.highlights || []).forEach(function(h) { %>
+                  <li><span class="bullet-arrow">▸</span><span><%= h %></span></li>
+                <% }); %>
+              </ul>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+      <% if (ai.relevantSkills && ai.relevantSkills.length > 0) { %>
+        <div class="skills-box">
+          <div class="section-label">Expertise</div>
+          <div class="skills-wrap">
+            <% ai.relevantSkills.forEach(function(s) { %>
+              <span class="skill-tag"><%= s %></span>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (ai.education && ai.education.length > 0) { %>
+        <div class="section-gap">
+          <div class="section-label">Education</div>
+          <% ai.education.forEach(function(edu) { %>
+            <div class="edu-block">
+              <div class="edu-degree"><%= edu.degree %></div>
+              <div class="edu-meta"><%= edu.school %> · <%= edu.year %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <% if (ai.certifications && ai.certifications.length > 0) { %>
+        <div>
+          <div class="section-label">Certifications</div>
+          <% ai.certifications.forEach(function(cert) { %>
+            <div class="cert-block">
+              <div class="cert-title"><%= cert.title %></div>
+              <div class="cert-meta"><%= cert.issuer %> (<%= cert.date %>)</div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
