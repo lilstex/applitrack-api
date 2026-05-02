@@ -7,6 +7,7 @@ import { JobApplicationModule } from './job-application/job-application.module';
 import { UserModule } from './user/user.module';
 import * as Joi from 'joi';
 import { PaymentModule } from './payment/payment.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PaymentModule } from './payment/payment.module';
     UserModule,
     JobApplicationModule,
     PaymentModule,
+    AdminModule
   ],
   controllers: [AppController],
   providers: [AppService],
