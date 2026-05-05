@@ -42,7 +42,7 @@ export class User extends Document {
   @Prop({ type: [Project] }) projects: Project[];
   @Prop([{ language: String, proficiency: String }])
   languages: { language: string; proficiency: string }[];
-  @Prop([{ title: String, issuer: String, date: String, description: String }])
+  @Prop([{ title: String, issuer: String, date: String, description: { type: String } }])
   awards: { title: string; issuer: string; date: string; description?: string }[];
   @Prop([{ organization: String, role: String, startDate: String, endDate: String, description: String }])
   volunteerWork: { organization: string; role: string; startDate: string; endDate: string; description: string }[];
