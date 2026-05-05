@@ -118,7 +118,7 @@ export class PdfService {
 
       return this.htmlToPdf(html, {
         footer: true,
-        margins: { top: '0px', right: '0px', bottom: '20px', left: '0px' },
+        margins: { top: '0px', right: '0px', bottom: '24px', left: '0px' },
       });
     } catch (error) {
       console.error(
