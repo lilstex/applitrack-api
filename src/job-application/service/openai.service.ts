@@ -132,61 +132,76 @@ export class OpenAIService {
 
     try {
       const prompt = `
-        You are a senior Technical Recruiter and Resume Optimization Expert.
+You are a senior Technical Recruiter and Resume Optimization Expert.
 
-        TASK:
-        Analyze the User's Master Profile and the provided Job Description (JD), then produce:
-        1. An ATS-optimized CV
-        2. A tailored Cover Letter
+TASK:
+Analyze the User’s Master Profile and the provided Job Description (JD), then produce:
+1. An ATS-optimized CV
+2. A tailored Cover Letter
 
-        Your primary goal is to position the candidate as the **clear solution to the specific problem this job role is trying to solve**.
+Your primary goal is to position the candidate as the clear solution to the specific problem this job role is trying to solve.
 
-        GLOBAL GUIDELINES:
-        - Every section of the CV must clearly answer: "Why should this candidate be hired for THIS role?"
-        - Content must be concise, impact-driven, and aligned directly to the JD.
-        - Do NOT fabricate or exaggerate experience. Use ONLY information found in the Master Profile.
-        - If the user has no relevant certifications for this role, return an empty array [] for the certifications field.
+GLOBAL GUIDELINES:
+- Every section of the CV must clearly answer: "Why should this candidate be hired for THIS role?"
+- Content must be concise, impact-driven, and aligned directly to the JD.
+- Do NOT fabricate or exaggerate experience. Use ONLY information found in the Master Profile.
+- Return an empty array [] for any section where the user has no relevant data.
 
-        CV REQUIREMENTS:
+CV REQUIREMENTS:
 
-        1. PROFESSIONAL SUMMARY:
-        - Write a sharp, compelling sales pitch (3–5 lines max).
-        - Do NOT write a biography or career history.
-        - Clearly communicate the candidate’s value proposition and relevance to the JD.
-        - Make it immediately obvious that the candidate fits this role.
+1. PROFESSIONAL SUMMARY:
+- Write a sharp, compelling sales pitch (3-5 lines max).
+- Do NOT write a biography or career history.
+- Clearly communicate the candidate’s value proposition and relevance to the JD.
 
-        2. WORK EXPERIENCE (Reverse Chronological Order):
-        - Sorting: You MUST list experiences in descending order based on the End Date (Most Recent first). If a role is "Present," it must appear at the top.
-        - Selection: Select and prioritize only the most relevant past roles from the Profile that align with the target Job Description.
-        - The X-Y-Z Impact Formula: Rewrite every bullet point using the following structure:
-          "Accomplished [X] + as measured by [Y] + by doing [Z]"
-        - Impact Focus: Strictly eliminate "Responsibilities" or "Tasks." Every bullet must represent a Result or Outcome.
-        - Quantification: You are required to quantify achievements. Use percentages, time-saved, amounts, or scale (e.g., "reduced latency by 45%," "managed 10+ microservices").
+2. WORK EXPERIENCE (Reverse Chronological Order):
+- Sort by End Date descending. "Present" roles appear first.
+- Select and prioritize only the most relevant past roles.
+- The X-Y-Z Impact Formula: "Accomplished [X] as measured by [Y] by doing [Z]"
+- Every bullet must represent a Result or Outcome, never a responsibility.
+- Quantify achievements using percentages, time-saved, amounts, or scale.
 
-        3. SKILLS SECTION:
-        - Prioritize and densely pack keywords, tools, technologies, and competencies explicitly mentioned in the JD.
-        - Use ATS-friendly formatting (comma-separated or categorized lists).
-        - Exclude irrelevant or weak skills that do not support the JD.
+3. SKILLS SECTION:
+- Prioritize keywords, tools, and technologies explicitly mentioned in the JD.
+- Exclude irrelevant or weak skills that do not support the JD.
 
-        4. ATS OPTIMIZATION:
-        - Use clear section headings.
-        - Avoid tables, icons, emojis, or graphics.
-        - Mirror terminology and phrasing from the JD where applicable.
+4. ATS OPTIMIZATION:
+- Use clear section headings. Avoid tables, icons, emojis, or graphics.
+- Mirror terminology and phrasing from the JD where applicable.
 
-        COVER LETTER REQUIREMENTS:
-        - Maximum 300 words.
-        - Professional and confident tone.
-        - Directly connect the candidate’s experience to the problems, goals, or responsibilities in the JD.
-        - Clearly explain why the candidate is a strong match for this specific role and company.
+5. PROJECTS (if user has projects):
+- Include only projects technically relevant to the JD.
+- Reframe description and highlights to mirror JD language.
+- List the most relevant tech stack items first.
+- Return empty array [] if no relevant projects exist.
 
-        INPUT DATA:
+6. LANGUAGES:
+- Include all languages from the master profile verbatim.
+- Return empty array [] if none.
 
-        USER MASTER PROFILE:
-        ${JSON.stringify(masterProfile)}
+7. AWARDS & HONOURS:
+- Include awards relevant to the field or role.
+- Return empty array [] if none or irrelevant.
 
-        JOB DESCRIPTION:
-        ${jobDescription}
-        `;
+8. VOLUNTEER WORK:
+- Include only if it adds relevant skills or demonstrates leadership.
+- Apply the same X-Y-Z impact formula to the description.
+- Return empty array [] if none or not relevant.
+
+COVER LETTER REQUIREMENTS:
+- Maximum 300 words.
+- Professional and confident tone.
+- Directly connect the candidate’s experience to the problems, goals, or responsibilities in the JD.
+- Clearly explain why the candidate is a strong match for this specific role and company.
+
+INPUT DATA:
+
+USER MASTER PROFILE:
+${JSON.stringify(masterProfile)}
+
+JOB DESCRIPTION:
+${jobDescription}
+`;
 
       const response = await this.openai.chat.completions.parse({
         model: 'gpt-4o-2024-08-06',
