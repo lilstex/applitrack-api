@@ -65,6 +65,7 @@
       <% if (user.phoneNumber) { %><div><%= user.phoneNumber %></div><% } %>
       <% if (user.linkedinUrl) { %><div><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
       <% if (user.githubUrl) { %><div><%= user.githubUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
+      <% if (user.portfolioUrl) { %><div><%= user.portfolioUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
     </div>
   </div>
   <div class="accent-stripe"></div>

@@ -74,6 +74,7 @@
       <% if (user.phoneNumber) { %><div class="side-item"><%= user.phoneNumber %></div><% } %>
       <% if (user.linkedinUrl) { %><div class="side-item"><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
       <% if (user.githubUrl) { %><div class="side-item"><%= user.githubUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
+      <% if (user.portfolioUrl) { %><div class="side-item"><%= user.portfolioUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
     </div>
     <% if (ai.relevantSkills && ai.relevantSkills.length > 0) { %>
       <div>

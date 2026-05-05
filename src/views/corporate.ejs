@@ -61,6 +61,7 @@
       <% if (user.phoneNumber) { %><span class="sep">|</span><span><%= user.phoneNumber %></span><% } %>
       <% if (user.linkedinUrl) { %><span class="sep">|</span><span><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></span><% } %>
       <% if (user.githubUrl) { %><span class="sep">|</span><span><%= user.githubUrl.replace(/^https?:\/\/(www\.)?/, '') %></span><% } %>
+      <% if (user.portfolioUrl) { %><span class="sep">|</span><span><%= user.portfolioUrl.replace(/^https?:\/\/(www\.)?/, '') %></span><% } %>
     </div>
   </header>
 

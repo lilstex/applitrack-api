@@ -31,7 +31,7 @@ export const CvResponseSchema = z.object({
   })),
   languages: z.array(z.object({ language: z.string(), proficiency: z.string() })),
   awards: z.array(z.object({
-    title: z.string(), issuer: z.string(), date: z.string(), description: z.string(),
+    title: z.string(), issuer: z.string(), date: z.string(), description: z.string().nullable(),
   })),
   volunteerWork: z.array(z.object({
     organization: z.string(), role: z.string(),
@@ -95,6 +95,7 @@ export const ProfileExtractionSchema = z.object({
   phoneNumber: z.string().nullable().describe('Contact phone number'),
   linkedinUrl: z.string().nullable().describe('Link to LinkedIn profile'),
   githubUrl: z.string().nullable().describe('Link to GitHub profile'),
+  portfolioUrl: z.string().nullable().describe('Link to portfolio or personal website'),
   summary: z.string().describe('A brief professional summary or bio'),
   skills: z.array(z.string()).describe('A flat list of technical and soft skills'),
   workExperience: z.array(ExperienceSchema),
