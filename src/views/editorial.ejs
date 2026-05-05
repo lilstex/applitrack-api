@@ -4,226 +4,133 @@
   <meta charset="UTF-8" />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    @page { margin: 0; size: A4; }
-    html, body { margin: 0; padding: 0; background: white; }
+    *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 48px 48px 32px; size: A4; }
+    @page :first { margin: 0; size: A4; }
+    html, body { margin: 0; padding: 0; background: white; orphans: 3; widows: 3; }
+    body { font-family: 'Sora', 'Trebuchet MS', sans-serif; color: #1a1a2e; font-size: 13px; line-height: 1.55; }
 
-    body {
-      font-family: 'Sora', 'Trebuchet MS', sans-serif;
-      color: #1a1a2e;
-      font-size: 13px;
-      line-height: 1.55;
-    }
+    header { background: #16213e; padding: 30px 48px 0; }
+    .header-inner { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 18px; }
+    header h1 { font-size: 34px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.03em; line-height: 1; margin: 0; color: #fff; }
+    .contact-block { text-align: right; font-size: 10px; color: #94a3b8; letter-spacing: 0.04em; line-height: 1.9; }
+    .accent-stripe { height: 4px; background: #e05d2a; }
 
-    .page {
-      width: 210mm;
-      min-height: 297mm;
-      margin: 0 auto;
-      background: white;
-    }
+    .body-grid { display: grid; grid-template-columns: 1fr 208px; }
+    .main-col { padding: 28px 28px 40px 48px; }
+    .side-col { background: #fff8f5; padding: 28px 18px 40px 20px; }
 
-    /* ── Full-width dark header ── */
-    header {
-      background: #16213e;
-      padding: 34px 48px 0 48px;
-    }
-    .header-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-bottom: 20px;
-    }
-    header h1 {
-      font-size: 38px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: -0.03em;
-      line-height: 1;
-      margin: 0;
-      color: #ffffff;
-    }
-    .contact-block {
-      text-align: right;
-      font-size: 10px;
-      color: #94a3b8;
-      letter-spacing: 0.05em;
-      line-height: 1.9;
-    }
-    /* Orange accent stripe */
-    .accent-stripe {
-      height: 4px;
-      background: #e05d2a;
-      border-radius: 0;
-    }
+    .sl { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.24em; color: #e05d2a; border-bottom: 1px solid #e05d2a; padding-bottom: 4px; margin: 20px 0 10px; page-break-after: avoid; }
+    .sl:first-child { margin-top: 0; }
+    .side-sl { font-size: 7.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.22em; color: #e05d2a; border-bottom: 0.75px solid #fbd0bb; padding-bottom: 3px; margin: 18px 0 8px; page-break-after: avoid; }
+    .side-sl:first-child { margin-top: 0; }
 
-    /* ── Body grid ── */
-    .body-grid {
-      display: grid;
-      grid-template-columns: 1fr 210px;
-    }
+    .summary { font-size: 13.5px; line-height: 1.8; color: #2d3748; margin: 0; }
 
-    /* ── Main content ── */
-    .main-col { padding: 32px 32px 40px 48px; }
-
-    /* ── Sidebar ── */
-    .side-col {
-      background: #fff5f0;
-      padding: 32px 20px 40px 22px;
-    }
-
-    /* ── Section labels ── */
-    .section-label {
-      font-size: 8.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.24em;
-      color: #e05d2a;
-      border-bottom: 1px solid #e05d2a;
-      padding-bottom: 4px;
-      margin-bottom: 12px;
-    }
-
-    /* ── Profile ── */
-    .profile-text { font-size: 13.5px; line-height: 1.8; color: #2d3748; margin: 0; }
-
-    /* ── Experience ── */
-    .exp-block { margin-bottom: 20px; page-break-inside: avoid; }
-    .exp-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
+    .exp-block { margin-bottom: 18px; page-break-inside: avoid; }
+    .exp-header { display: flex; justify-content: space-between; align-items: baseline; }
     .exp-role { font-size: 15px; font-weight: 700; margin: 0; color: #1a1a2e; }
-    .exp-dates { font-size: 10px; color: #64748b; letter-spacing: 0.03em; }
-    .exp-company {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.11em;
-      color: #e05d2a;
-      margin-bottom: 7px;
-    }
+    .exp-dates { font-size: 10px; color: #64748b; }
+    .exp-company { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.11em; color: #e05d2a; margin-bottom: 6px; }
     .exp-bullets { margin: 0; padding: 0; list-style: none; }
-    .exp-bullets li {
-      font-size: 12.5px;
-      line-height: 1.65;
-      color: #374151;
-      margin-bottom: 4px;
-      padding-left: 12px;
-      border-left: 3px solid #e05d2a;
-    }
+    .exp-bullets li { font-size: 12.5px; line-height: 1.65; color: #374151; margin-bottom: 3px; padding-left: 11px; border-left: 2.5px solid #fbd0bb; }
 
-    /* ── Sidebar skills ── */
-    .skill-tag {
-      display: block;
-      background: white;
-      border: 1px solid #fbd0bb;
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 10.5px;
-      font-weight: 600;
-      color: #1a1a2e;
-      margin-bottom: 5px;
-    }
+    .project-block { margin-bottom: 14px; page-break-inside: avoid; }
+    .project-name { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
+    .project-tech { font-size: 9.5px; font-weight: 600; color: #e05d2a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+    .project-desc { font-size: 12px; color: #374151; line-height: 1.6; margin-bottom: 3px; }
+    .project-bullets { margin: 0; padding: 0; list-style: none; }
+    .project-bullets li { font-size: 12px; line-height: 1.65; color: #374151; margin-bottom: 2px; padding-left: 11px; border-left: 2.5px solid #fbd0bb; }
 
-    /* ── Edu / Cert ── */
-    .edu-block, .cert-block { margin-bottom: 11px; }
-    .edu-degree, .cert-title { font-size: 12px; font-weight: 700; color: #1a1a2e; }
-    .edu-meta, .cert-meta { font-size: 10.5px; color: #6b7280; }
+    .vol-block { margin-bottom: 14px; page-break-inside: avoid; }
+    .vol-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .vol-role { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .vol-dates { font-size: 10px; color: #64748b; }
+    .vol-org { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.11em; color: #e05d2a; margin-bottom: 5px; }
+    .vol-desc { font-size: 12px; color: #374151; line-height: 1.65; }
 
-    .section-gap { margin-bottom: 22px; }
+    .skill-tag { display: block; background: white; border: 1px solid #fbd0bb; border-radius: 4px; padding: 4px 10px; font-size: 10.5px; font-weight: 600; color: #1a1a2e; margin-bottom: 5px; }
+    .side-block { margin-bottom: 10px; }
+    .side-title { font-size: 11.5px; font-weight: 700; color: #1a1a2e; }
+    .side-meta { font-size: 10px; color: #6b7280; }
+    .side-desc { font-size: 10px; color: #374151; line-height: 1.5; margin-top: 2px; }
   </style>
 </head>
 <body>
-<div class="page">
-
-  <header>
-    <div class="header-inner">
-      <h1><%= user.fullName %></h1>
-      <div class="contact-block">
-        <div><%= user.email %></div>
-        <% if (user.phoneNumber) { %><div><%= user.phoneNumber %></div><% } %>
-        <% if (user.linkedinUrl) { %><div><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
-      </div>
-    </div>
-    <div class="accent-stripe"></div>
-  </header>
-
-  <div class="body-grid">
-
-    <!-- Main -->
-    <div class="main-col">
-      <% if (ai.professionalSummary) { %>
-        <div class="section-gap">
-          <div class="section-label">About</div>
-          <p class="profile-text"><%= ai.professionalSummary %></p>
-        </div>
-      <% } %>
-
-      <% if (ai.refinedExperience && ai.refinedExperience.length > 0) { %>
-        <div>
-          <div class="section-label">Experience</div>
-          <% ai.refinedExperience.forEach(function(exp) { %>
-            <div class="exp-block">
-              <div class="exp-header">
-                <div class="exp-role"><%= exp.role %></div>
-                <div class="exp-dates"><%= exp.startDate %> – <%= exp.endDate %></div>
-              </div>
-              <div class="exp-company"><%= exp.company %></div>
-              <ul class="exp-bullets">
-                <% (exp.highlights || []).forEach(function(h) { %>
-                  <li><%= h %></li>
-                <% }); %>
-              </ul>
-            </div>
-          <% }); %>
-        </div>
-      <% } %>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="side-col">
-      <% if (ai.relevantSkills && ai.relevantSkills.length > 0) { %>
-        <div class="section-gap">
-          <div class="section-label">Skills</div>
-          <% ai.relevantSkills.forEach(function(s) { %>
-            <span class="skill-tag"><%= s %></span>
-          <% }); %>
-        </div>
-      <% } %>
-
-      <% if (ai.education && ai.education.length > 0) { %>
-        <div class="section-gap">
-          <div class="section-label">Education</div>
-          <% ai.education.forEach(function(edu) { %>
-            <div class="edu-block">
-              <div class="edu-degree"><%= edu.degree %></div>
-              <div class="edu-meta"><%= edu.school %></div>
-              <div class="edu-meta"><%= edu.year %></div>
-            </div>
-          <% }); %>
-        </div>
-      <% } %>
-
-      <% if (ai.certifications && ai.certifications.length > 0) { %>
-        <div>
-          <div class="section-label">Certifications</div>
-          <% ai.certifications.forEach(function(cert) { %>
-            <div class="cert-block">
-              <div class="cert-title"><%= cert.title %></div>
-              <div class="cert-meta"><%= cert.issuer %></div>
-              <div class="cert-meta"><%= cert.date %></div>
-            </div>
-          <% }); %>
-        </div>
-      <% } %>
+<header>
+  <div class="header-inner">
+    <h1><%= user.fullName %></h1>
+    <div class="contact-block">
+      <div><%= user.email %></div>
+      <% if (user.phoneNumber) { %><div><%= user.phoneNumber %></div><% } %>
+      <% if (user.linkedinUrl) { %><div><%= user.linkedinUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
+      <% if (user.githubUrl) { %><div><%= user.githubUrl.replace(/^https?:\/\/(www\.)?/, '') %></div><% } %>
     </div>
   </div>
+  <div class="accent-stripe"></div>
+</header>
 
+<div class="body-grid">
+  <div class="main-col">
+    <% if (ai.professionalSummary) { %><div class="sl">About</div><p class="summary"><%= ai.professionalSummary %></p><% } %>
+
+    <% if (ai.refinedExperience && ai.refinedExperience.length > 0) { %>
+      <div class="sl">Experience</div>
+      <% ai.refinedExperience.forEach(function(exp) { %>
+        <div class="exp-block">
+          <div class="exp-header"><div class="exp-role"><%= exp.role %></div><div class="exp-dates"><%= exp.startDate %> – <%= exp.endDate %></div></div>
+          <div class="exp-company"><%= exp.company %></div>
+          <ul class="exp-bullets"><% (exp.highlights || []).forEach(function(h) { %><li><%= h %></li><% }); %></ul>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <% if (ai.projects && ai.projects.length > 0) { %>
+      <div class="sl">Projects</div>
+      <% ai.projects.forEach(function(proj) { %>
+        <div class="project-block">
+          <div class="project-name"><%= proj.name %></div>
+          <% if (proj.techStack && proj.techStack.length > 0) { %><div class="project-tech"><%= proj.techStack.join(' · ') %></div><% } %>
+          <div class="project-desc"><%= proj.description %></div>
+          <% if (proj.highlights && proj.highlights.length > 0) { %><ul class="project-bullets"><% proj.highlights.forEach(function(h) { %><li><%= h %></li><% }); %></ul><% } %>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <% if (ai.volunteerWork && ai.volunteerWork.length > 0) { %>
+      <div class="sl">Volunteer Work</div>
+      <% ai.volunteerWork.forEach(function(vol) { %>
+        <div class="vol-block">
+          <div class="vol-header"><div class="vol-role"><%= vol.role %></div><div class="vol-dates"><%= vol.startDate %> – <%= vol.endDate %></div></div>
+          <div class="vol-org"><%= vol.organization %></div>
+          <div class="vol-desc"><%= vol.description %></div>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+
+  <div class="side-col">
+    <% if (ai.relevantSkills && ai.relevantSkills.length > 0) { %>
+      <div class="side-sl">Skills</div>
+      <% ai.relevantSkills.forEach(function(s) { %><span class="skill-tag"><%= s %></span><% }); %>
+    <% } %>
+    <% if (ai.education && ai.education.length > 0) { %>
+      <div class="side-sl">Education</div>
+      <% ai.education.forEach(function(edu) { %><div class="side-block"><div class="side-title"><%= edu.degree %></div><div class="side-meta"><%= edu.school %></div><div class="side-meta"><%= edu.year %></div></div><% }); %>
+    <% } %>
+    <% if (ai.certifications && ai.certifications.length > 0) { %>
+      <div class="side-sl">Certifications</div>
+      <% ai.certifications.forEach(function(cert) { %><div class="side-block"><div class="side-title"><%= cert.title %></div><div class="side-meta"><%= cert.issuer %></div><div class="side-meta"><%= cert.date %></div></div><% }); %>
+    <% } %>
+    <% if (ai.languages && ai.languages.length > 0) { %>
+      <div class="side-sl">Languages</div>
+      <% ai.languages.forEach(function(lang) { %><div class="side-block"><div class="side-title"><%= lang.language %></div><div class="side-meta"><%= lang.proficiency %></div></div><% }); %>
+    <% } %>
+    <% if (ai.awards && ai.awards.length > 0) { %>
+      <div class="side-sl">Awards</div>
+      <% ai.awards.forEach(function(award) { %><div class="side-block"><div class="side-title"><%= award.title %></div><div class="side-meta"><%= award.issuer %> · <%= award.date %></div><% if (award.description) { %><div class="side-desc"><%= award.description %></div><% } %></div><% }); %>
+    <% } %>
+  </div>
 </div>
 </body>
 </html>
