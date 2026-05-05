@@ -13,32 +13,30 @@ import { UpdateBasicInfoDto } from 'src/user/dto/profile.dto';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Define the schema the AI MUST follow
-const CvResponseSchema = z.object({
+export const CvResponseSchema = z.object({
   professionalSummary: z.string(),
-  refinedExperience: z.array(
-    z.object({
-      role: z.string(),
-      company: z.string(),
-      startDate: z.string(),
-      endDate: z.string(),
-      highlights: z.array(z.string()),
-    }),
-  ),
+  refinedExperience: z.array(z.object({
+    role: z.string(), company: z.string(),
+    startDate: z.string(), endDate: z.string(),
+    highlights: z.array(z.string()),
+  })),
   relevantSkills: z.array(z.string()),
-  education: z.array(
-    z.object({
-      degree: z.string(),
-      school: z.string(),
-      year: z.string(),
-    }),
-  ),
-  certifications: z.array(
-    z.object({
-      title: z.string(),
-      issuer: z.string(),
-      date: z.string(),
-    }),
-  ),
+  education: z.array(z.object({ degree: z.string(), school: z.string(), year: z.string() })),
+  certifications: z.array(z.object({ title: z.string(), issuer: z.string(), date: z.string() })),
+  projects: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    techStack: z.array(z.string()),
+    highlights: z.array(z.string()),
+  })),
+  languages: z.array(z.object({ language: z.string(), proficiency: z.string() })),
+  awards: z.array(z.object({
+    title: z.string(), issuer: z.string(), date: z.string(), description: z.string(),
+  })),
+  volunteerWork: z.array(z.object({
+    organization: z.string(), role: z.string(),
+    startDate: z.string(), endDate: z.string(), description: z.string(),
+  })),
   coverLetter: z.string(),
 });
 
@@ -47,15 +45,9 @@ const ExperienceSchema = z.object({
   role: z.string().describe('The job title or position held'),
   location: z.string().nullable().describe('City and Country or Remote'),
   startDate: z.string().describe('The start date in YYYY-MM-DD format'),
-  endDate: z
-    .string()
-    .describe('The end date in YYYY-MM-DD format or "Present"'),
-  highlights: z
-    .array(z.string())
-    .describe('Bullet points of achievements and responsibilities'),
-  technologiesUsed: z
-    .array(z.string())
-    .describe('List of tools, languages, or frameworks used in this role'),
+  endDate: z.string().describe('The end date in YYYY-MM-DD format or "Present"'),
+  highlights: z.array(z.string()).describe('Bullet points of achievements and responsibilities'),
+  technologiesUsed: z.array(z.string()).describe('List of tools, languages, or frameworks used'),
 });
 
 const EducationSchema = z.object({
@@ -70,17 +62,48 @@ const CertificationSchema = z.object({
   date: z.string().describe('The date the certification was obtained'),
 });
 
+const ProjectSchema = z.object({
+  name: z.string().describe('Project name'),
+  description: z.string().describe('Short description of what the project does'),
+  url: z.string().nullable().describe('Project URL or repository link'),
+  techStack: z.array(z.string()).describe('Technologies used'),
+  highlights: z.array(z.string()).describe('Key achievements or features'),
+});
+
+const LanguageSchema = z.object({
+  language: z.string().describe('Name of the language'),
+  proficiency: z.string().describe('Proficiency level: Native, Fluent, Professional, Intermediate, or Basic'),
+});
+
+const AwardSchema = z.object({
+  title: z.string().describe('Award or honour title'),
+  issuer: z.string().describe('Issuing organisation'),
+  date: z.string().describe('Date awarded'),
+  description: z.string().nullable().describe('Short description of the award'),
+});
+
+const VolunteerSchema = z.object({
+  organization: z.string().describe('Name of the organisation'),
+  role: z.string().describe('Volunteer role or title'),
+  startDate: z.string().describe('Start date in YYYY-MM-DD format'),
+  endDate: z.string().describe('End date in YYYY-MM-DD format or "Present"'),
+  description: z.string().describe('What was done and achieved'),
+});
+
 export const ProfileExtractionSchema = z.object({
   fullName: z.string().describe('The full name of the individual'),
   phoneNumber: z.string().nullable().describe('Contact phone number'),
   linkedinUrl: z.string().nullable().describe('Link to LinkedIn profile'),
+  githubUrl: z.string().nullable().describe('Link to GitHub profile'),
   summary: z.string().describe('A brief professional summary or bio'),
-  skills: z
-    .array(z.string())
-    .describe('A flat list of technical and soft skills'),
+  skills: z.array(z.string()).describe('A flat list of technical and soft skills'),
   workExperience: z.array(ExperienceSchema),
   education: z.array(EducationSchema),
   certifications: z.array(CertificationSchema),
+  projects: z.array(ProjectSchema),
+  languages: z.array(LanguageSchema),
+  awards: z.array(AwardSchema),
+  volunteerWork: z.array(VolunteerSchema),
 });
 
 @Injectable()
