@@ -23,12 +23,18 @@ export class ProfileService {
 
   async updateBasicInfo(userId: string, updateData: UpdateBasicInfoDto) {
     try {
-      return this.userModel.findByIdAndUpdate(userId, updateData, {
-        new: true,
-      });
+      const $set: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updateData)) {
+        if (Array.isArray(value)) {
+          if (value.length > 0) $set[key] = value;
+        } else if (value !== undefined && value !== null && value !== '') {
+          $set[key] = value;
+        }
+      }
+      return this.userModel.findByIdAndUpdate(userId, { $set }, { new: true });
     } catch (error) {
       console.log(error);
-      throw new InternalServerErrorException('Server Erroor');
+      throw new InternalServerErrorException('Server Error');
     }
   }
 

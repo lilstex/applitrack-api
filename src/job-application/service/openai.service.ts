@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -286,6 +287,9 @@ ${jobDescription}
       return parsedData as UpdateBasicInfoDto;
     } catch (error) {
       console.error('PDF Extraction Error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Failed to extract data from PDF. Please try a different resume file.',
       );
