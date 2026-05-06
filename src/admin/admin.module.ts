@@ -7,8 +7,14 @@ import {
   ApplicationHistory,
   ApplicationHistorySchema,
 } from 'src/job-application/schema/application-history.schema';
-import { Transaction, TransactionSchema } from 'src/payment/schema/transaction.schema';
-import { CreditPlan, CreditPlanSchema } from 'src/payment/schema/credit-plan.schema';
+import {
+  Transaction,
+  TransactionSchema,
+} from 'src/payment/schema/transaction.schema';
+import {
+  CreditPlan,
+  CreditPlanSchema,
+} from 'src/payment/schema/credit-plan.schema';
 
 @Module({
   imports: [

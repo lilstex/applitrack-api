@@ -1,7 +1,7 @@
 import {
-    Injectable,
-    NotFoundException,
-    InternalServerErrorException,
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -13,161 +13,161 @@ import { CreditPlan } from 'src/payment/schema/credit-plan.schema';
 
 @Injectable()
 export class AdminService {
-    constructor(
-        @InjectModel(User.name) private userModel: Model<User>,
-        @InjectModel(Transaction.name)
-        private transactionModel: Model<Transaction>,
-        @InjectModel(CreditPlan.name)
-        private creditPlanModel: Model<CreditPlan>,
-        @InjectModel(ApplicationHistory.name)
-        private applicationModel: Model<ApplicationHistory>,
-    ) { }
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Transaction.name)
+    private transactionModel: Model<Transaction>,
+    @InjectModel(CreditPlan.name)
+    private creditPlanModel: Model<CreditPlan>,
+    @InjectModel(ApplicationHistory.name)
+    private applicationModel: Model<ApplicationHistory>,
+  ) {}
 
-    // ================= DASHBOARD =================
-    async getDashboard() {
-        try {
-            const [users, revenue, creditsUsed, applications] = await Promise.all([
-                this.userModel.countDocuments(),
-                this.transactionModel.aggregate([
-                    { $match: { type: 'purchase' } },
-                    { $group: { _id: null, total: { $sum: '$amount' } } },
-                ]),
-                this.transactionModel.aggregate([
-                    { $match: { type: 'usage' } },
-                    { $group: { _id: null, total: { $sum: '$credits' } } },
-                ]),
-                this.applicationModel.countDocuments(),
-            ]);
+  // ================= DASHBOARD =================
+  async getDashboard() {
+    try {
+      const [users, revenue, creditsUsed, applications] = await Promise.all([
+        this.userModel.countDocuments(),
+        this.transactionModel.aggregate([
+          { $match: { type: 'purchase' } },
+          { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]),
+        this.transactionModel.aggregate([
+          { $match: { type: 'usage' } },
+          { $group: { _id: null, total: { $sum: '$credits' } } },
+        ]),
+        this.applicationModel.countDocuments(),
+      ]);
 
-            return {
-                users,
-                revenue: revenue[0]?.total || 0,
-                creditsUsed: creditsUsed[0]?.total || 0,
-                applications,
-            };
-        } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException('Failed to fetch dashboard');
-        }
+      return {
+        users,
+        revenue: revenue[0]?.total || 0,
+        creditsUsed: creditsUsed[0]?.total || 0,
+        applications,
+      };
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Failed to fetch dashboard');
+    }
+  }
+
+  // ================= USERS =================
+  async getUsers(query: any) {
+    const { page = 1, limit = 10, search, role } = query;
+    const skip = (page - 1) * limit;
+
+    const filter: any = {};
+
+    // 🔍 Search (name OR email)
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
     }
 
-    // ================= USERS =================
-    async getUsers(query: any) {
-        const { page = 1, limit = 10, search, role } = query;
-        const skip = (page - 1) * limit;
-
-        const filter: any = {};
-
-        // 🔍 Search (name OR email)
-        if (search) {
-            filter.$or = [
-                { fullName: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-            ];
-        }
-
-        // 🎯 Role filter
-        if (role) {
-            filter.role = role;
-        }
-
-        const users = await this.userModel
-            .find(filter)
-            .select('-password') // 🔐 safety
-            .skip(skip)
-            .limit(limit)
-            .sort({ createdAt: -1 });
-
-        const total = await this.userModel.countDocuments(filter);
-
-        return { users, total, page, limit };
+    // 🎯 Role filter
+    if (role) {
+      filter.role = role;
     }
 
-    async updateUserRole(userId: string, role: string) {
-        const user = await this.userModel.findByIdAndUpdate(
-            userId,
-            { role },
-            { new: true },
-        );
+    const users = await this.userModel
+      .find(filter)
+      .select('-password') // 🔐 safety
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
-        if (!user) throw new NotFoundException('User not found');
-        return user;
-    }
+    const total = await this.userModel.countDocuments(filter);
 
-    async updateUserCredits(userId: string, credits: number) {
-        const user = await this.userModel.findByIdAndUpdate(
-            userId,
-            { credits },
-            { new: true },
-        );
+    return { users, total, page, limit };
+  }
 
-        if (!user) throw new NotFoundException('User not found');
-        return user;
-    }
+  async updateUserRole(userId: string, role: string) {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true },
+    );
 
-    // ================= CREDIT PLANS =================
-    async createPlan(data: any) {
-        return this.creditPlanModel.create(data);
-    }
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 
-    async updatePlan(id: string, data: any) {
-        const plan = await this.creditPlanModel.findByIdAndUpdate(id, data, {
-            new: true,
-        });
+  async updateUserCredits(userId: string, credits: number) {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { credits },
+      { new: true },
+    );
 
-        if (!plan) throw new NotFoundException('Plan not found');
-        return plan;
-    }
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 
-    async togglePlan(id: string) {
-        const plan = await this.creditPlanModel.findById(id);
-        if (!plan) throw new NotFoundException('Plan not found');
+  // ================= CREDIT PLANS =================
+  async createPlan(data: any) {
+    return this.creditPlanModel.create(data);
+  }
 
-        plan.isActive = !plan.isActive;
-        return plan.save();
-    }
+  async updatePlan(id: string, data: any) {
+    const plan = await this.creditPlanModel.findByIdAndUpdate(id, data, {
+      new: true,
+    });
 
-    async getPlans() {
-        return this.creditPlanModel.find().sort({ createdAt: -1 });
-    }
+    if (!plan) throw new NotFoundException('Plan not found');
+    return plan;
+  }
 
-    // ================= TRANSACTIONS =================
-    async getTransactions(query: any) {
-        const { page = 1, limit = 10, type } = query;
-        const skip = (page - 1) * limit;
+  async togglePlan(id: string) {
+    const plan = await this.creditPlanModel.findById(id);
+    if (!plan) throw new NotFoundException('Plan not found');
 
-        const filter: any = {};
-        if (type) filter.type = type;
+    plan.isActive = !plan.isActive;
+    return plan.save();
+  }
 
-        const transactions = await this.transactionModel
-            .find(filter)
-            .populate('user', 'email fullName')
-            .skip(skip)
-            .limit(limit)
-            .sort({ createdAt: -1 });
+  async getPlans() {
+    return this.creditPlanModel.find().sort({ createdAt: -1 });
+  }
 
-        const total = await this.transactionModel.countDocuments(filter);
+  // ================= TRANSACTIONS =================
+  async getTransactions(query: any) {
+    const { page = 1, limit = 10, type } = query;
+    const skip = (page - 1) * limit;
 
-        return { transactions, total, page, limit };
-    }
+    const filter: any = {};
+    if (type) filter.type = type;
 
-    // ================= APPLICATIONS =================
-    async getApplications(query: any) {
-        const { page = 1, limit = 10, jobTitle } = query;
-        const skip = (page - 1) * limit;
+    const transactions = await this.transactionModel
+      .find(filter)
+      .populate('user', 'email fullName')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
-        const filter: any = {};
-        if (jobTitle) filter.jobTitle = new RegExp(jobTitle, 'i');
+    const total = await this.transactionModel.countDocuments(filter);
 
-        const apps = await this.applicationModel
-            .find(filter)
-            .populate('user', 'email fullName')
-            .skip(skip)
-            .limit(limit)
-            .sort({ createdAt: -1 });
+    return { transactions, total, page, limit };
+  }
 
-        const total = await this.applicationModel.countDocuments(filter);
+  // ================= APPLICATIONS =================
+  async getApplications(query: any) {
+    const { page = 1, limit = 10, jobTitle } = query;
+    const skip = (page - 1) * limit;
 
-        return { apps, total, page, limit };
-    }
+    const filter: any = {};
+    if (jobTitle) filter.jobTitle = new RegExp(jobTitle, 'i');
+
+    const apps = await this.applicationModel
+      .find(filter)
+      .populate('user', 'email fullName')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const total = await this.applicationModel.countDocuments(filter);
+
+    return { apps, total, page, limit };
+  }
 }
