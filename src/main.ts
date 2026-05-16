@@ -35,13 +35,13 @@ async function bootstrap() {
     .setTitle('AppliTrack API Service')
     .setDescription('AppliTrack API Docs')
     .setVersion('1.0')
-    .addServer('http://localhost:2200/', 'Local environment')
+    .addServer('http://localhost:3000/', 'Local environment')
     .addServer('https://applitrack-api.shotnubsolutions.com/', 'Production')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api', app, document);
-  await app.listen(process.env.PORT ?? 2200);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
