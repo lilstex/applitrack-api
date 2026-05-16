@@ -12,18 +12,12 @@ export class PaginationDto {
 }
 
 export class GetUsersDto extends PaginationDto {
-  @ApiPropertyOptional({
-    example: 'emmanuel',
-    description: 'Search by full name or email',
-  })
+  @ApiPropertyOptional({ example: 'emmanuel', description: 'Search by full name or email' })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({
-    example: 'admin',
-    description: 'Filter by role (user | admin)',
-  })
+  @ApiPropertyOptional({ example: 'admin', description: 'Filter by role (user | admin)' })
   @IsOptional()
   @IsString()
   role?: string;
@@ -57,8 +51,11 @@ export class CreateCreditPlanDto {
   @ApiProperty()
   priceUsd: number;
 
-  @ApiProperty()
-  lemonSqueezyVariantId: string;
+  @ApiPropertyOptional()
+  lemonSqueezyVariantId?: string;
+
+  @ApiPropertyOptional()
+  stripePriceId?: string;
 }
 
 export class UpdateCreditPlanDto extends CreateCreditPlanDto {}
@@ -67,10 +64,21 @@ export class TransactionFilterDto extends PaginationDto {
   @ApiPropertyOptional({ example: 'purchase' })
   @IsOptional()
   type?: string;
+
+  @ApiPropertyOptional({ description: 'Search by user name/email or reference' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 export class ApplicationFilterDto extends PaginationDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Search by job title or company name' })
   @IsOptional()
-  jobTitle?: string;
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by application status' })
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

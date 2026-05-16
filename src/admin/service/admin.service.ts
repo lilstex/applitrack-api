@@ -15,18 +15,15 @@ import { CreditPlan } from 'src/payment/schema/credit-plan.schema';
 export class AdminService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Transaction.name)
-    private transactionModel: Model<Transaction>,
-    @InjectModel(CreditPlan.name)
-    private creditPlanModel: Model<CreditPlan>,
-    @InjectModel(ApplicationHistory.name)
-    private applicationModel: Model<ApplicationHistory>,
+    @InjectModel(Transaction.name) private transactionModel: Model<Transaction>,
+    @InjectModel(CreditPlan.name) private creditPlanModel: Model<CreditPlan>,
+    @InjectModel(ApplicationHistory.name) private applicationModel: Model<ApplicationHistory>,
   ) {}
 
   // ================= DASHBOARD =================
   async getDashboard() {
     try {
-      const [users, revenue, creditsUsed, applications] = await Promise.all([
+      const [totalUsers, revenueResult, creditsUsedResult, totalApplications] = await Promise.all([
         this.userModel.countDocuments(),
         this.transactionModel.aggregate([
           { $match: { type: 'purchase' } },
@@ -40,10 +37,10 @@ export class AdminService {
       ]);
 
       return {
-        users,
-        revenue: revenue[0]?.total || 0,
-        creditsUsed: creditsUsed[0]?.total || 0,
-        applications,
+        totalUsers,
+        totalRevenue: revenueResult[0]?.total || 0,
+        totalCreditsUsed: creditsUsedResult[0]?.total || 0,
+        totalApplications,
       };
     } catch (error) {
       console.log(error);
@@ -58,7 +55,6 @@ export class AdminService {
 
     const filter: any = {};
 
-    // 🔍 Search (name OR email)
     if (search) {
       filter.$or = [
         { fullName: { $regex: search, $options: 'i' } },
@@ -66,43 +62,39 @@ export class AdminService {
       ];
     }
 
-    // 🎯 Role filter
     if (role) {
       filter.role = role;
     }
 
     const users = await this.userModel
       .find(filter)
-      .select('-password') // 🔐 safety
+      .select('-password')
       .skip(skip)
-      .limit(limit)
+      .limit(Number(limit))
       .sort({ createdAt: -1 });
 
     const total = await this.userModel.countDocuments(filter);
 
-    return { users, total, page, limit };
+    return { users, total, page: Number(page), limit: Number(limit) };
   }
 
   async updateUserRole(userId: string, role: string) {
-    const user = await this.userModel.findByIdAndUpdate(
-      userId,
-      { role },
-      { new: true },
-    );
-
+    const user = await this.userModel.findByIdAndUpdate(userId, { role }, { new: true }).select('-password');
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
   async updateUserCredits(userId: string, credits: number) {
-    const user = await this.userModel.findByIdAndUpdate(
-      userId,
-      { credits },
-      { new: true },
-    );
-
+    const user = await this.userModel.findByIdAndUpdate(userId, { credits }, { new: true }).select('-password');
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  async toggleUser(userId: string) {
+    const user = await this.userModel.findById(userId).select('-password');
+    if (!user) throw new NotFoundException('User not found');
+    user.isActive = !user.isActive;
+    return user.save();
   }
 
   // ================= CREDIT PLANS =================
@@ -111,10 +103,7 @@ export class AdminService {
   }
 
   async updatePlan(id: string, data: any) {
-    const plan = await this.creditPlanModel.findByIdAndUpdate(id, data, {
-      new: true,
-    });
-
+    const plan = await this.creditPlanModel.findByIdAndUpdate(id, data, { new: true });
     if (!plan) throw new NotFoundException('Plan not found');
     return plan;
   }
@@ -122,7 +111,6 @@ export class AdminService {
   async togglePlan(id: string) {
     const plan = await this.creditPlanModel.findById(id);
     if (!plan) throw new NotFoundException('Plan not found');
-
     plan.isActive = !plan.isActive;
     return plan.save();
   }
@@ -133,41 +121,60 @@ export class AdminService {
 
   // ================= TRANSACTIONS =================
   async getTransactions(query: any) {
-    const { page = 1, limit = 10, type } = query;
+    const { page = 1, limit = 10, type, search } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
     if (type) filter.type = type;
 
-    const transactions = await this.transactionModel
+    let transactions = await this.transactionModel
       .find(filter)
       .populate('user', 'email fullName')
       .skip(skip)
-      .limit(limit)
+      .limit(Number(limit))
       .sort({ createdAt: -1 });
+
+    // Post-populate search filter on user fields or reference
+    if (search) {
+      const s = search.toLowerCase();
+      transactions = transactions.filter((tx: any) => {
+        const user = tx.user as any;
+        return (
+          user?.fullName?.toLowerCase().includes(s) ||
+          user?.email?.toLowerCase().includes(s) ||
+          tx.providerReference?.toLowerCase().includes(s)
+        );
+      });
+    }
 
     const total = await this.transactionModel.countDocuments(filter);
 
-    return { transactions, total, page, limit };
+    return { transactions, total, page: Number(page), limit: Number(limit) };
   }
 
   // ================= APPLICATIONS =================
   async getApplications(query: any) {
-    const { page = 1, limit = 10, jobTitle } = query;
+    const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
-    if (jobTitle) filter.jobTitle = new RegExp(jobTitle, 'i');
+    if (status) filter.status = status;
+    if (search) {
+      filter.$or = [
+        { jobTitle: { $regex: search, $options: 'i' } },
+        { companyName: { $regex: search, $options: 'i' } },
+      ];
+    }
 
-    const apps = await this.applicationModel
+    const applications = await this.applicationModel
       .find(filter)
       .populate('user', 'email fullName')
       .skip(skip)
-      .limit(limit)
+      .limit(Number(limit))
       .sort({ createdAt: -1 });
 
     const total = await this.applicationModel.countDocuments(filter);
 
-    return { apps, total, page, limit };
+    return { applications, total, page: Number(page), limit: Number(limit) };
   }
 }
