@@ -1,0 +1,9 @@
+services:
+  api:
+    container_name: applitrack-api
+    build: .
+    restart: always
+    ports:
+      - '3001:3000'
+    env_file:
+      - .env
