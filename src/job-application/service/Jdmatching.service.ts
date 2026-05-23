@@ -30,7 +30,7 @@ export interface RemixResult {
   data: RemixedCvData | null; // null = confidence too low, call OpenAI
 }
 
-const CONFIDENCE_THRESHOLD = 85;
+const CONFIDENCE_THRESHOLD = 50;
 
 const MAX_APPLICATIONS_TO_SCAN = 20;
 
