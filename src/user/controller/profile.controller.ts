@@ -27,6 +27,16 @@ import { ExperienceDto, UpdateBasicInfoDto } from '../dto/profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { OpenAIService } from 'src/job-application/service/openai.service';
 import { ChangePasswordDto } from '../dto/auth.dto';
+import { assertIsPdf } from 'src/security/validators/pdf.validator';
+
+const FIVE_MB = 5 * 1024 * 1024;
+
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'application/x-pdf',
+  'application/acrobat',
+  'application/vnd.pdf',
+]);
 
 @ApiTags('User Profile')
 @ApiBearerAuth()
@@ -40,8 +50,6 @@ export class ProfileController {
 
   @Get()
   @ApiOperation({ summary: 'Get current user master profile' })
-  @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async getMyProfile(@Req() req) {
     return this.profileService.getProfile(req.user._id);
   }
@@ -65,21 +73,20 @@ export class ProfileController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
+      properties: { file: { type: 'string', format: 'binary' } },
     },
   })
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (req, file, callback) => {
-        if (!file.originalname.match(/\.(pdf)$/)) {
+      limits: { fileSize: FIVE_MB, files: 1 },
+      fileFilter: (_req, file, callback) => {
+        const extOk = /\.pdf$/i.test(file.originalname);
+        const mimeOk = ALLOWED_MIME.has(file.mimetype);
+        if (!extOk || !mimeOk) {
           return callback(
-            new BadRequestException('Only PDF files are allowed!'),
+            new BadRequestException(
+              'Only PDF files are allowed (received: ' + file.mimetype + ')',
+            ),
             false,
           );
         }
@@ -92,22 +99,19 @@ export class ProfileController {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
+
+    assertIsPdf(file.buffer, { maxSizeBytes: FIVE_MB });
+
     const userId = req.user._id;
-
-    // Extract data via AI
     const extractedData = await this.aiService.extractDataFromPdf(file.buffer);
-
-    // Update user profile with extracted data
     return this.profileService.updateProfile(userId, extractedData);
   }
 
   @Get('status')
   @ApiOperation({ summary: 'Check if user profile is completed' })
-  @ApiResponse({ status: 200, description: 'Returns completion status' })
   async getProfileStatus(@Req() req) {
     const userId = req.user._id;
     const user = await this.profileService.getProfile(userId);
-
     return {
       isCompleted: user.workExperience && user.workExperience.length > 0,
     };
@@ -136,20 +140,8 @@ export class ProfileController {
   @ApiResponse({
     status: 200,
     description: 'Change Password',
-    content: {
-      'application/json': {
-        example: {
-          status: true,
-          statusCode: 200,
-          message: 'Password changed successfully',
-        },
-      },
-    },
   })
-  @ApiBody({
-    type: ChangePasswordDto,
-    description: 'Change Password',
-  })
+  @ApiBody({ type: ChangePasswordDto, description: 'Change Password' })
   @ApiOperation({ summary: 'Change Password' })
   async changePassword(
     @Req() request,

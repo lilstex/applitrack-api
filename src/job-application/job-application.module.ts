@@ -12,6 +12,7 @@ import { UserModule } from 'src/user/user.module';
 import { User, UserSchema } from 'src/user/schema/user.schema';
 import { PaymentModule } from 'src/payment/payment.module';
 import { JdMatchingService } from './service/Jdmatching.service';
+import { SignedDownloadService } from 'src/security/services/signed-download.service';
 
 @Module({
   imports: [
@@ -23,7 +24,13 @@ import { JdMatchingService } from './service/Jdmatching.service';
     PaymentModule,
   ],
   controllers: [ApplicationController],
-  providers: [ApplicationService, OpenAIService, PdfService, JdMatchingService],
+  providers: [
+    ApplicationService,
+    OpenAIService,
+    PdfService,
+    JdMatchingService,
+    SignedDownloadService,
+  ],
   exports: [OpenAIService],
 })
 export class JobApplicationModule {}

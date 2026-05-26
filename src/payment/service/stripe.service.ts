@@ -1,9 +1,14 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
+  private readonly logger = new Logger(StripeService.name);
   private stripe: Stripe;
 
   constructor(private configService: ConfigService) {
@@ -28,12 +33,7 @@ export class StripeService {
     try {
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
+        line_items: [{ price: priceId, quantity: 1 }],
         mode: 'payment',
         customer_email: email,
         success_url: `${process.env.FRONTEND_URL}/dashboard?payment=success`,
@@ -47,9 +47,11 @@ export class StripeService {
       });
 
       return { url: session.url };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        `Stripe session creation failed for user ${userId}`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw new InternalServerErrorException('Stripe session creation failed');
     }
   }

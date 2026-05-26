@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import * as ejs from 'ejs';
 import * as path from 'path';
@@ -20,6 +24,8 @@ const VALID_TEMPLATES: ResumeTemplate[] = [
 
 @Injectable()
 export class PdfService {
+  private readonly logger = new Logger(PdfService.name);
+
   private get launchOptions(): puppeteer.LaunchOptions {
     return {
       headless: true,
@@ -60,7 +66,6 @@ export class PdfService {
         waitUntil: ['networkidle0', 'domcontentloaded'],
       });
 
-      // Ensure web fonts are fully loaded before rendering
       await page.evaluateHandle('document.fonts.ready');
 
       const pdfBuffer = await page.pdf({
@@ -102,7 +107,6 @@ export class PdfService {
     profile: any,
     template: string = 'modern',
   ): Promise<Buffer> {
-    // Sanitise template selection
     const resolvedTemplate: ResumeTemplate = VALID_TEMPLATES.includes(
       template as ResumeTemplate,
     )
@@ -121,15 +125,14 @@ export class PdfService {
         margins: { top: '0px', right: '0px', bottom: '24px', left: '0px' },
       });
     } catch (error) {
-      console.error(
-        `CV generation failed (template="${resolvedTemplate}"):`,
-        error,
+      this.logger.error(
+        `CV generation failed (template="${resolvedTemplate}")`,
+        error instanceof Error ? error.stack : String(error),
       );
       throw new InternalServerErrorException('Could not generate CV PDF');
     }
   }
 
-  // Generate cover letter PDF
   async generateCoverLetterPdf(
     coverLetter: string,
     profile: any,
@@ -149,7 +152,10 @@ export class PdfService {
         margins: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
       });
     } catch (error) {
-      console.error('Cover letter generation failed:', error);
+      this.logger.error(
+        'Cover letter generation failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException(
         'Could not generate cover letter PDF',
       );

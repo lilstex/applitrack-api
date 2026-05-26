@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -13,6 +14,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ProfileService {
+  private readonly logger = new Logger(ProfileService.name);
+
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async getProfile(userId: string): Promise<User> {
@@ -33,7 +36,10 @@ export class ProfileService {
       }
       return this.userModel.findByIdAndUpdate(userId, { $set }, { new: true });
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        `updateBasicInfo failed for user ${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException('Server Error');
     }
   }
@@ -42,13 +48,8 @@ export class ProfileService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    // Push the new item
     user.workExperience.push(experience as any);
-
-    // Sort the actual Mongoose array
     user.workExperience.sort((a, b) => this.compareDates(a.endDate, b.endDate));
-
-    // Tell Mongoose the array structure/order has changed
     user.markModified('workExperience');
 
     return user.save();
@@ -63,15 +64,10 @@ export class ProfileService {
     if (!user) throw new NotFoundException('User not found');
 
     const experience = (user.workExperience as any).id(expId);
-
     if (!experience) throw new NotFoundException('Experience record not found');
 
-    // Update the subdocument fields directly
     experience.set(updateData);
-
-    // Re-sort the array
     user.workExperience.sort((a, b) => this.compareDates(a.endDate, b.endDate));
-
     user.markModified('workExperience');
     return user.save();
   }
@@ -80,25 +76,17 @@ export class ProfileService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    // Handle Work Experience Sorting if AI returns unsorted data
     if (updateData.workExperience && updateData.workExperience.length > 0) {
       updateData.workExperience.sort((a, b) =>
         this.compareDates(a.endDate, b.endDate),
       );
     }
 
-    // Update only fields that have values
     Object.keys(updateData).forEach((key) => {
       const value = updateData[key];
-
-      // For arrays, only update if it's a non-empty array
       if (Array.isArray(value)) {
-        if (value.length > 0) {
-          user[key] = value;
-        }
-      }
-      // For objects and strings, update if truthy (not null/undefined/empty string)
-      else if (value !== undefined && value !== null && value !== '') {
+        if (value.length > 0) user[key] = value;
+      } else if (value !== undefined && value !== null && value !== '') {
         user[key] = value;
       }
     });
@@ -117,13 +105,13 @@ export class ProfileService {
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
     try {
       const { newPassword, currentPassword } = changePasswordDto;
-      const user: User = await this.userModel.findById(userId).exec();
+      const user: User = await this.userModel
+        .findById(userId)
+        .select('+password')
+        .exec();
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+      if (!user) throw new NotFoundException('User not found');
 
-      // Validate password
       const isPasswordMatched = await bcrypt.compare(
         currentPassword,
         user.password,
@@ -132,38 +120,35 @@ export class ProfileService {
         throw new ConflictException('Invalid current password');
       }
 
-      // Update Password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
+      user.password = await bcrypt.hash(newPassword, 12);
       user.resetToken = null;
       user.passwordResetTokenExpiresAt = null;
       await user.save();
 
-      return {
-        success: true,
-        message: 'Password changed successfully',
-      };
+      return { success: true, message: 'Password changed successfully' };
     } catch (error) {
-      console.log(error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        `changePassword failed for user ${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException('Failed to change password');
     }
   }
 
   private compareDates(dateA: string, dateB: string): number {
     const getTime = (dateStr: string | undefined): number => {
-      // Handle "Present" - treat it as the highest possible timestamp
       if (!dateStr || dateStr.toLowerCase().trim() === 'present') {
         return Date.now();
       }
-
-      // Standard ISO strings (2023-11-01)
       const time = new Date(dateStr).getTime();
-
-      // Fallback for unparseable dates
       return isNaN(time) ? 0 : time;
     };
-
-    // Return B - A for Reverse Chronological (Descending)
     return getTime(dateB) - getTime(dateA);
   }
 }

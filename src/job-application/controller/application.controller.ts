@@ -11,9 +11,9 @@ import {
   ForbiddenException,
   Delete,
   Patch,
-  HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { UserGuard } from 'src/security/guards/auth.guard';
 import { ApplicationService } from '../service/application.service';
 import { OpenAIService } from '../service/openai.service';
@@ -37,10 +37,10 @@ import {
 } from '../dto/application.dto';
 import { PaymentService } from 'src/payment/service/payment.service';
 import { JdMatchingService } from '../service/Jdmatching.service';
+import { SignedDownloadService } from 'src/security/services/signed-download.service';
+import { Public } from 'src/security/guards/public.decorator';
 
 @ApiTags('Job Application')
-@ApiBearerAuth()
-@UseGuards(UserGuard)
 @Controller('application')
 export class ApplicationController {
   constructor(
@@ -50,8 +50,11 @@ export class ApplicationController {
     private profileService: ProfileService,
     private paymentService: PaymentService,
     private matchingService: JdMatchingService,
+    private signedDownload: SignedDownloadService,
   ) {}
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Post('generate')
   @ApiOperation({ summary: 'Process JD and generate tailored CV/Cover Letter' })
   @ApiBody({ type: GenerateCvDto })
@@ -63,12 +66,10 @@ export class ApplicationController {
   async generate(@Req() req, @Body() jobData: GenerateCvDto) {
     const userId = req.user._id;
 
-    // Check for duplicates
     const check = await this.appService.processJobApplication(userId, jobData);
     if (check.isDuplicate) return check;
     const { jdHash } = check as { isDuplicate: false; jdHash: string };
 
-    // Pattern-match against existing applications
     const remixResult = await this.matchingService.findOrRemix(
       userId,
       jobData.title,
@@ -90,7 +91,6 @@ export class ApplicationController {
       };
       usedCache = true;
     } else {
-      // No good match, fetch profile and call OpenAI as normal.
       const profile = await this.profileService.getProfile(userId);
       aiOutput = await this.aiService.generateTailoredContent(
         profile,
@@ -98,7 +98,6 @@ export class ApplicationController {
       );
     }
 
-    // Save and return
     const savedApp = await this.appService.saveApplication({
       user: userId,
       rawJobDescription: jobData.description,
@@ -107,7 +106,6 @@ export class ApplicationController {
       jdHash: jdHash,
       generatedCvData: aiOutput,
       generatedCoverLetter: aiOutput.coverLetter,
-      // Store metadata so you can audit cache hit rates in the DB
       cacheMetadata: {
         usedCache,
         confidence: remixResult.confidence,
@@ -115,15 +113,15 @@ export class ApplicationController {
       },
     });
 
-    // Only charge credits and log a transaction for genuine AI calls
     await this.paymentService.createTransaction(userId, jobData.company);
-
     return savedApp;
   }
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Get()
   @ApiOperation({
-    summary: 'Get all job applications for the logged-in user with pagination',
+    summary: 'Get all job applications for the logged-in user',
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -132,38 +130,93 @@ export class ApplicationController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
-    const userId = req.user._id;
-    return this.appService.getUserApplications(userId, page, limit);
+    return this.appService.getUserApplications(req.user._id, page, limit);
   }
 
-  @Get('download/:id')
-  @ApiOperation({ summary: 'Stream the generated CV as a PDF file' })
-  @ApiParam({ name: 'id', description: 'The Application History ID' })
-  @ApiQuery({
-    name: 'template',
-    required: false,
-    description:
-      'Resume template style. One of: modern | corporate | minimal | editorial | executive',
-    example: 'modern',
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('download-link/:id')
+  @ApiOperation({
+    summary: 'Mint a short-lived signed download URL for the CV PDF',
   })
-  @ApiProduces('application/pdf')
-  @ApiResponse({
-    status: 200,
-    description: 'The CV PDF file.',
-    content: {
-      'application/pdf': { schema: { type: 'string', format: 'binary' } },
-    },
-  })
-  async download(
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiQuery({ name: 'template', required: false })
+  async getCvDownloadLink(
     @Req() req,
     @Param('id') appId: string,
     @Query('template') template: string,
+  ) {
+    await this.assertOwnership(appId, req.user._id);
+    const qs = this.signedDownload.sign({
+      resourceId: appId,
+      userId: String(req.user._id),
+      scope: 'cv',
+      ttlSeconds: 60,
+    });
+    const base = process.env.API_PUBLIC_URL ?? '';
+    const tplParam = template
+      ? `&template=${encodeURIComponent(template)}`
+      : '';
+    return {
+      url: `${base}/api/v1/application/download/${appId}?${qs}${tplParam}`,
+      expiresIn: 60,
+    };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('download-cover-letter-link/:id')
+  @ApiOperation({
+    summary: 'Mint a short-lived signed download URL for the cover letter',
+  })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  async getCoverLetterDownloadLink(@Req() req, @Param('id') appId: string) {
+    await this.assertOwnership(appId, req.user._id);
+    const qs = this.signedDownload.sign({
+      resourceId: appId,
+      userId: String(req.user._id),
+      scope: 'cover-letter',
+      ttlSeconds: 60,
+    });
+    const base = process.env.API_PUBLIC_URL ?? '';
+    return {
+      url: `${base}/api/v1/application/download-cover-letter/${appId}?${qs}`,
+      expiresIn: 60,
+    };
+  }
+
+  @Public()
+  @Get('download/:id')
+  @ApiOperation({
+    summary: 'Stream the generated CV as a PDF (requires signed query string)',
+  })
+  @ApiProduces('application/pdf')
+  async download(
+    @Param('id') appId: string,
+    @Query('template') template: string,
+    @Query('sig') sig: string,
+    @Query('exp') exp: string,
+    @Query('n') nonce: string,
+    @Query('u') userId: string,
     @Res() res: Response,
   ) {
+    const { userId: verifiedUserId } = this.signedDownload.verify({
+      resourceId: appId,
+      scope: 'cv',
+      sig,
+      exp,
+      nonce,
+      userId,
+    });
+
     const [app, profile] = await Promise.all([
       this.appService.getById(appId),
-      this.profileService.getProfile(req.user._id),
+      this.profileService.getProfile(verifiedUserId),
     ]);
+
+    if (!app || String(app.user) !== String(verifiedUserId)) {
+      throw new ForbiddenException();
+    }
 
     const buffer = await this.pdfService.generateCvPdf(
       app.generatedCvData,
@@ -172,35 +225,46 @@ export class ApplicationController {
     );
 
     const filename = `Resume_${(app.companyName || 'Application').replace(/\s+/g, '_')}.pdf`;
-
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': buffer.length,
+      'Cache-Control': 'no-store, private',
     });
     res.end(buffer);
   }
 
+  @Public()
   @Get('download-cover-letter/:id')
-  @ApiOperation({ summary: 'Stream the generated cover letter as a PDF file' })
-  @ApiParam({ name: 'id', description: 'The Application ID' })
-  @ApiProduces('application/pdf')
-  @ApiResponse({
-    status: 200,
-    description: 'The cover letter PDF file.',
-    content: {
-      'application/pdf': { schema: { type: 'string', format: 'binary' } },
-    },
+  @ApiOperation({
+    summary: 'Stream the cover letter as PDF (requires signed query string)',
   })
+  @ApiProduces('application/pdf')
   async downloadCoverLetter(
-    @Req() req,
     @Param('id') appId: string,
+    @Query('sig') sig: string,
+    @Query('exp') exp: string,
+    @Query('n') nonce: string,
+    @Query('u') userId: string,
     @Res() res: Response,
   ) {
+    const { userId: verifiedUserId } = this.signedDownload.verify({
+      resourceId: appId,
+      scope: 'cover-letter',
+      sig,
+      exp,
+      nonce,
+      userId,
+    });
+
     const [app, profile] = await Promise.all([
       this.appService.getById(appId),
-      this.profileService.getProfile(req.user._id),
+      this.profileService.getProfile(verifiedUserId),
     ]);
+
+    if (!app || String(app.user) !== String(verifiedUserId)) {
+      throw new ForbiddenException();
+    }
 
     const buffer = await this.pdfService.generateCoverLetterPdf(
       app.generatedCoverLetter,
@@ -210,35 +274,21 @@ export class ApplicationController {
     );
 
     const filename = `CoverLetter_${(app.companyName || 'Application').replace(/\s+/g, '_')}.pdf`;
-
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': buffer.length,
+      'Cache-Control': 'no-store, private',
     });
     res.end(buffer);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update the recruitment status of an application' })
-  @ApiParam({
-    name: 'id',
-    description: 'The unique MongoDB ID of the application',
-    example: '658af3...',
-  })
+  @ApiParam({ name: 'id' })
   @ApiBody({ type: UpdateStatusDto })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The application status has been successfully updated.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'No application found with the provided ID.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid status value provided.',
-  })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateStatusDto,
@@ -246,61 +296,50 @@ export class ApplicationController {
     return this.appService.updateStatus(id, updateStatusDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get a single application by ID' })
   async findOne(@Req() req, @Param('id') id: string) {
-    const userId = req.user._id;
     const application = await this.appService.getById(id);
-
-    // Ensure the application belongs to the logged-in user
-    if (application.user.toString() !== userId.toString()) {
+    if (application.user.toString() !== req.user._id.toString()) {
       throw new ForbiddenException(
         'You do not have permission to view this application',
       );
     }
-
     return application;
   }
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Patch(':id')
-  @ApiOperation({
-    summary: 'Update application details',
-    description:
-      'Updates specific fields of an application record. Only the owner of the record can perform this action.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'The unique MongoDB ID of the application record',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'The application has been successfully updated.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden: You do not own this record.',
-  })
-  @ApiResponse({ status: 404, description: 'Application not found.' })
+  @ApiOperation({ summary: 'Update application details' })
+  @ApiParam({ name: 'id' })
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateApplicationDto,
     @Req() req,
   ) {
-    const userId = req.user._id;
-    return this.appService.updateApplication(id, userId, updateDto);
+    return this.appService.updateApplication(id, req.user._id, updateDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Permanently delete an application record' })
-  @ApiParam({ name: 'id', description: 'The Application ID' })
   async remove(@Req() req, @Param('id') id: string) {
-    const userId = req.user._id;
-    await this.appService.deleteApplication(id, userId);
+    await this.appService.deleteApplication(id, req.user._id);
+    return { message: 'Application successfully deleted', deletedId: id };
+  }
 
-    return {
-      message: 'Application successfully deleted',
-      deletedId: id,
-    };
+  private async assertOwnership(appId: string, userId: string): Promise<void> {
+    const app = await this.appService.getById(appId);
+    if (!app) throw new NotFoundException('Application not found');
+    if (String(app.user) !== String(userId)) {
+      throw new ForbiddenException(
+        'You do not have permission to download this application',
+      );
+    }
   }
 
   private async buildCoverLetter(
@@ -308,14 +347,10 @@ export class ApplicationController {
     jobData: { title: string; company: string; description: string },
     userId: string,
   ): Promise<string> {
-    // Grab the most recent application that has a cover letter
     const recent = await this.appService.getMostRecentWithCoverLetter(userId);
-
     if (!recent?.generatedCoverLetter) {
       return this.templateCoverLetter(cvData, jobData);
     }
-
-    // Swap old company/title references for new ones
     let letter = recent.generatedCoverLetter;
     if (recent.companyName) {
       letter = letter.replace(
@@ -326,18 +361,15 @@ export class ApplicationController {
     if (recent.jobTitle) {
       letter = letter.replace(new RegExp(recent.jobTitle, 'gi'), jobData.title);
     }
-
     return letter;
   }
 
-  /** Minimal template-based cover letter used only as a last resort fallback. */
   private templateCoverLetter(
     cvData: any,
     jobData: { title: string; company: string },
   ): string {
     const topSkills = (cvData.relevantSkills ?? []).slice(0, 4).join(', ');
     const latestRole = cvData.refinedExperience?.[0];
-
     return [
       `Dear Hiring Manager,`,
       ``,

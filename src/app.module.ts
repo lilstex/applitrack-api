@@ -28,6 +28,10 @@ import { AllExceptionsFilter } from './security/filters/all-exceptions.filter';
         COOKIE_DOMAIN: Joi.string().optional(),
         THROTTLE_TTL_MS: Joi.number().default(60000),
         THROTTLE_LIMIT: Joi.number().default(60),
+        REDIS_URL: Joi.string()
+          .uri({ scheme: ['redis', 'rediss'] })
+          .required(),
+        REDIS_TLS: Joi.string().valid('true', 'false').default('false'),
       }),
       isGlobal: true,
     }),

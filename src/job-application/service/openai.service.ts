@@ -3,6 +3,7 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -149,6 +150,7 @@ export const ProfileExtractionSchema = z.object({
 
 @Injectable()
 export class OpenAIService {
+  private readonly logger = new Logger(OpenAIService.name);
   private openai: OpenAI;
 
   constructor(@InjectModel(User.name) private userModel: Model<User>) {
@@ -354,8 +356,10 @@ ${jobDescription}
         $inc: { credits: COST_PER_CV },
       });
 
-      // Log the error for internal debugging
-      console.error('OpenAI Generation Error:', error);
+      this.logger.error(
+        'OpenAI generation failed',
+        error instanceof Error ? error.stack : String(error),
+      );
 
       throw new InternalServerErrorException('AI generation failed');
     }
@@ -416,7 +420,10 @@ ${jobDescription}
       }
       return parsedData as UpdateBasicInfoDto;
     } catch (error) {
-      console.error('PDF Extraction Error:', error);
+      this.logger.error(
+        'PDF extraction failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       if (error instanceof HttpException) {
         throw error;
       }

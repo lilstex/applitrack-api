@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   InternalServerErrorException,
@@ -46,7 +45,10 @@ export class EmailService {
         data,
       );
     } catch (error) {
-      console.error('Error rendering email template:', error);
+      this.logger.error(
+        `Failed to render email template "${template}"`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException('Error rendering email template');
     }
   }
@@ -61,16 +63,13 @@ export class EmailService {
 
     try {
       const info = await this.transporter.sendMail({ from, to, subject, html });
-      return {
-        status: true,
-        message: 'Email sent successfully',
-      };
+      return { status: true, message: 'Email sent successfully' };
     } catch (error) {
-      this.logger.error('Error sending email', error);
-      return {
-        status: false,
-        message: 'Failed to send email',
-      };
+      this.logger.error(
+        `Failed to send email to ${to}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return { status: false, message: 'Failed to send email' };
     }
   }
 
@@ -81,16 +80,17 @@ export class EmailService {
       const { user, email, code, template = 'verification' } = obj;
       const html = await this.renderTemplate(template, { user, email, code });
       const data = await this.sendEmail({
-        from: from,
+        from,
         to: email,
         subject: 'Bethy AI Account Verification',
         html,
       });
-      return {
-        ...data,
-      };
+      return { ...data };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        'sendEmailVerificationCode failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       return {
         status: false,
         message: 'Error occured while sending code',
@@ -101,7 +101,6 @@ export class EmailService {
   async sendWelcomeNote(obj: any): Promise<any> {
     try {
       const { user, email, link, template = 'welcome' } = obj;
-      // Link to app
       const html = await this.renderTemplate(template, { user, email, link });
       const data = await this.sendEmail({
         from:
@@ -111,11 +110,12 @@ export class EmailService {
         subject: 'Bethy AI welcome Note And Demo',
         html,
       });
-      return {
-        ...data,
-      };
+      return { ...data };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        'sendWelcomeNote failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       return {
         status: false,
         message: 'Error occured while sending welcome message',
@@ -135,11 +135,12 @@ export class EmailService {
         subject: 'Shotnub Solutions Applitrack Password Reset',
         html,
       });
-
-      return {
-        ...data,
-      };
+      return { ...data };
     } catch (error) {
+      this.logger.error(
+        'sendPasswordResetLink failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       return {
         status: false,
         message: 'Error occured while sending password reset link',
