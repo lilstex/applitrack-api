@@ -24,10 +24,26 @@ class Project {
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true }) fullName: string;
-  @Prop({ required: true, unique: true }) email: string;
+  @Prop({
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    index: true,
+  })
+  email: string;
   @Prop({ enum: ['user', 'admin'], default: 'user' }) role: string;
-  @Prop({ default: 30 }) credits: number;
-  @Prop({ required: true, minlength: 5, select: false }) password: string;
+  @Prop({ default: 0 }) credits: number;
+  @Prop({ required: true, minlength: 60, select: false }) password: string;
+  @Prop({ default: false }) isEmailVerified: boolean;
+  @Prop({ select: false }) emailVerificationToken: string;
+  @Prop() emailVerificationExpiresAt: Date;
+
+  @Prop({ default: 0 }) failedLoginAttempts: number;
+  @Prop() lockedUntil: Date;
+
+  @Prop({ select: false }) resetToken: string;
+  @Prop() passwordResetTokenExpiresAt: Date;
   @Prop() phoneNumber: string;
   @Prop() linkedinUrl: string;
   @Prop() githubUrl: string;
@@ -72,9 +88,10 @@ export class User extends Document {
     endDate: string;
     description: string;
   }[];
-  @Prop() resetToken: string;
-  @Prop() passwordResetTokenExpiresAt: Date;
   @Prop({ default: true }) isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index({ emailVerificationToken: 1 });
+UserSchema.index({ resetToken: 1 });

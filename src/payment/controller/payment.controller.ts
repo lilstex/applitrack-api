@@ -37,6 +37,8 @@ import {
   LemonSqueezyService,
   LemonSqueezyWebhookPayload,
 } from '../service/lemonsqueezy.service';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 interface RequestWithRawBody extends Request {
   rawBody: Buffer;
@@ -53,9 +55,7 @@ export class PaymentController {
     private readonly paymentService: PaymentService,
   ) {}
 
-  /**
-   * Lemon Squeezy sends webhooks
-   */
+  @SkipThrottle()
   @Post('webhook/lemonsqueezy')
   @ApiOperation({ summary: 'Lemon Squeezy webhook receiver' })
   async handleLemonSqueezyWebhook(
@@ -63,42 +63,31 @@ export class PaymentController {
     @Req() request: RequestWithRawBody,
     @Res() response: ExpressResponse,
   ) {
-    if (!signature) {
-      this.logger.warn('LemonSqueezy webhook received without X-Signature');
-      throw new BadRequestException('Missing X-Signature header');
-    }
+    if (!signature) throw new BadRequestException('Missing X-Signature header');
 
-    // Verify signature
     try {
       this.lemonSqueezyService.verifyWebhookSignature(
         request.rawBody,
         signature,
       );
     } catch (err) {
-      this.logger.warn(
-        `LemonSqueezy webhook signature invalid: ${err.message}`,
-      );
+      this.logger.warn(`LemonSqueezy signature invalid`);
       throw new BadRequestException('Invalid webhook signature');
     }
 
     const payload = request.body as LemonSqueezyWebhookPayload;
     const eventName = payload?.meta?.event_name;
+    this.logger.log(`LemonSqueezy event: ${eventName}`);
 
-    this.logger.log(`LemonSqueezy webhook received: ${eventName}`);
-
-    // Only process paid orders
     if (
       eventName === 'order_created' &&
       payload.data?.attributes?.status === 'paid'
     ) {
-      const { userId, creditAmount, amount } = payload.meta.custom_data;
+      const { userId, creditAmount, amount } = payload.meta.custom_data ?? {};
       const providerReference = payload.data.attributes.identifier;
 
       if (!userId || !creditAmount || !amount) {
-        this.logger.error(
-          'LemonSqueezy webhook missing required custom_data fields',
-          payload.meta.custom_data,
-        );
+        this.logger.error('LS webhook missing custom_data');
         return response.status(HttpStatus.OK).send({ received: true });
       }
 
@@ -114,71 +103,60 @@ export class PaymentController {
     return response.status(HttpStatus.OK).send({ received: true });
   }
 
-  /**
-   * Paystack sends a webhook for successful transactions
-   */
+  @SkipThrottle()
   @Post('webhook/paystack')
   @ApiOperation({ summary: 'Paystack webhook receiver' })
   async handlePaystackWebhook(
     @NestHeaders('x-paystack-signature') signature: string,
-    @Req() request: Request,
+    @Req() request: RequestWithRawBody,
     @Res() response: ExpressResponse,
   ) {
-    if (!signature) {
-      throw new BadRequestException('Missing Paystack signature');
+    if (!signature) throw new BadRequestException('Missing Paystack signature');
+    if (!this.paystackSecret) {
+      this.logger.error('PAYSTACK_SECRET_KEY not configured');
+      throw new BadRequestException('Webhook misconfigured');
+    }
+    if (!request.rawBody) {
+      throw new BadRequestException('Raw body unavailable');
     }
 
-    const body = request.body;
-
-    // Verify HMAC-SHA512
-    const { createHmac } = await import('crypto');
     const hash = createHmac('sha512', this.paystackSecret)
-      .update(JSON.stringify(body))
+      .update(request.rawBody)
       .digest('hex');
 
-    if (hash !== signature) {
+    const a = Buffer.from(hash);
+    const b = Buffer.from(signature);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      this.logger.warn('Paystack signature mismatch');
       throw new BadRequestException('Invalid Paystack signature');
     }
 
+    const body = request.body;
     if (body.event === 'charge.success') {
-      const { userId, creditAmount, amount } = body.data.metadata;
-
-      await this.paymentService.fulfillOrder(
-        userId,
-        parseInt(amount, 10),
-        parseInt(creditAmount, 10),
-        body.data.reference,
-        'paystack',
-      );
+      const { userId, creditAmount, amount } = body.data.metadata ?? {};
+      if (userId && creditAmount && amount) {
+        await this.paymentService.fulfillOrder(
+          userId,
+          parseInt(amount, 10),
+          parseInt(creditAmount, 10),
+          body.data.reference,
+          'paystack',
+        );
+      }
     }
 
     return response.status(HttpStatus.OK).send({ received: true });
   }
 
-  /**
-   * POST /payment/top-up
-   *
-   */
+  @Throttle({ long: { ttl: 3600000, limit: 10 } })
   @Post('top-up')
   @ApiBearerAuth()
   @UseGuards(UserGuard)
   @ApiOperation({ summary: 'Initialize a credit purchase transaction' })
   @ApiBody({ type: TopUpDto })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Returns a checkout URL for the selected gateway.',
-    schema: {
-      example: { url: 'https://app.lemonsqueezy.com/checkout/buy/...' },
-    },
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid plan slug or gateway.',
-  })
   async initializeTopUp(@Req() req, @Body() topUpDto: TopUpDto) {
     const userId = String(req.user._id);
     const email = req.user.email;
-
     const plan = await this.paymentService.getPlanBySlug(topUpDto.planId);
 
     if (topUpDto.gateway === PaymentGateway.PAYSTACK) {
@@ -201,6 +179,8 @@ export class PaymentController {
       );
       return { url };
     }
+
+    throw new BadRequestException('Unsupported gateway');
   }
 
   @Get('plans')
@@ -213,8 +193,6 @@ export class PaymentController {
   @ApiBearerAuth()
   @UseGuards(UserGuard, RoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: 'Admin: Create a new credit plan' })
-  @ApiBody({ type: CreateCreditPlanDto })
   async createPlan(@Body() dto: CreateCreditPlanDto) {
     return this.paymentService.createPlan(dto);
   }
@@ -223,8 +201,6 @@ export class PaymentController {
   @ApiBearerAuth()
   @UseGuards(UserGuard, RoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: 'Admin: Update an existing credit plan' })
-  @ApiParam({ name: 'id', description: 'The MongoDB ObjectID of the plan' })
   async updatePlan(@Param('id') id: string, @Body() dto: UpdateCreditPlanDto) {
     return this.paymentService.updatePlan(id, dto);
   }
@@ -233,8 +209,6 @@ export class PaymentController {
   @ApiBearerAuth()
   @UseGuards(UserGuard, RoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: 'Admin: Delete a credit plan' })
-  @ApiParam({ name: 'id', description: 'The MongoDB ObjectID of the plan' })
   async deletePlan(@Param('id') id: string) {
     return this.paymentService.deletePlan(id);
   }
