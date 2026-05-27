@@ -117,7 +117,7 @@ export class RefreshTokenService {
   }
 
   /**
-   * Revoke every refresh token in a family. Used when reuse is detected.
+   * Revoke every refresh token in a family.
    */
   private async revokeFamily(family: string): Promise<void> {
     await this.refreshTokenModel.updateMany(
