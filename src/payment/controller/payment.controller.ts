@@ -13,6 +13,8 @@ import {
   Param,
   Delete,
   Logger,
+  NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { Request, Response as ExpressResponse } from 'express';
 import { PaymentService } from '../service/payment.service';
@@ -29,6 +31,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
 import { RoleGuard } from 'src/security/guards/role.guard';
@@ -181,6 +184,46 @@ export class PaymentController {
     }
 
     throw new BadRequestException('Unsupported gateway');
+  }
+
+  @Throttle({ medium: { ttl: 60000, limit: 30 } })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('transactions')
+  @ApiOperation({ summary: 'Get the current user transaction history' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['purchase', 'usage'],
+    description: 'Defaults to purchases. Use "usage" for spent-credit records.',
+  })
+  async getMyTransactions(
+    @Req() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: 'purchase' | 'usage',
+  ) {
+    return this.paymentService.getUserTransactions(String(req.user._id), {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      type,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('transactions/:id')
+  @ApiOperation({ summary: 'Get a single transaction owned by the user' })
+  @ApiParam({ name: 'id', description: 'Transaction ID' })
+  async getMyTransaction(@Req() req, @Param('id') id: string) {
+    const tx = await this.paymentService.getUserTransactionById(
+      String(req.user._id),
+      id,
+    );
+    if (!tx) throw new NotFoundException('Transaction not found');
+    return tx;
   }
 
   @Get('plans')

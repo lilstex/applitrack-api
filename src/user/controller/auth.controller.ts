@@ -9,6 +9,7 @@ import {
   Req,
   Get,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from '../service/auth.service';
@@ -22,35 +23,50 @@ import {
 } from '../dto/auth.dto';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { TurnstileGuard } from 'src/security/guards/turnstile.guard';
+import {
+  RefreshTokenService,
+  TokenPair,
+} from '../service/refresh-token.service';
 
-function setAuthCookie(res: Response, token: string) {
+const REFRESH_COOKIE_PATH = '/api/v1/auth';
+
+function cookieBaseOpts() {
   const useSecureCrossSite = process.env.COOKIE_SECURE === 'true';
-
-  res.cookie('token', token, {
+  return {
     httpOnly: true,
     secure: useSecureCrossSite,
-    sameSite: useSecureCrossSite ? 'none' : 'lax',
+    sameSite: (useSecureCrossSite ? 'none' : 'lax') as 'none' | 'lax',
     domain: process.env.COOKIE_DOMAIN || undefined,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
+  };
+}
+
+function setTokenPair(res: Response, pair: TokenPair) {
+  const base = cookieBaseOpts();
+  res.cookie('token', pair.accessToken, {
+    ...base,
+    maxAge: pair.accessTokenExpiresInSec * 1000,
     path: '/',
+  });
+  res.cookie('refresh_token', pair.refreshToken, {
+    ...base,
+    maxAge: pair.refreshTokenExpiresInSec * 1000,
+    path: REFRESH_COOKIE_PATH,
   });
 }
 
-function clearAuthCookie(res: Response) {
-  const useSecureCrossSite = process.env.COOKIE_SECURE === 'true';
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: useSecureCrossSite,
-    sameSite: useSecureCrossSite ? 'none' : 'lax',
-    domain: process.env.COOKIE_DOMAIN || undefined,
-    path: '/',
-  });
+function clearTokenPair(res: Response) {
+  const base = cookieBaseOpts();
+  res.clearCookie('token', { ...base, path: '/' });
+  res.clearCookie('refresh_token', { ...base, path: REFRESH_COOKIE_PATH });
 }
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private refreshTokenService: RefreshTokenService,
+  ) {}
 
   @Throttle({ long: { ttl: 3600000, limit: 3 } })
   @UseGuards(TurnstileGuard)
@@ -82,21 +98,58 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(
     @Body() loginDto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token, role } = await this.authService.login(
+    const user = await this.authService.loginAndReturnUser(
       loginDto.email,
       loginDto.password,
     );
-    setAuthCookie(res, access_token);
-    return { role };
+    const pair = await this.refreshTokenService.issueNewPair(user, {
+      userAgent: req.headers['user-agent'] as string | undefined,
+      ip: req.ip,
+    });
+    setTokenPair(res, pair);
+    return { role: user.role };
+  }
+
+  @SkipThrottle()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange refresh token for a new token pair' })
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const presented = (req as any).cookies?.refresh_token;
+    if (!presented) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+
+    try {
+      const pair = await this.refreshTokenService.rotate(presented, {
+        userAgent: req.headers['user-agent'] as string | undefined,
+        ip: req.ip,
+      });
+      setTokenPair(res, pair);
+      return { success: true };
+    } catch (err) {
+      clearTokenPair(res);
+      throw err;
+    }
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Logout — clears auth cookie' })
-  async logout(@Res({ passthrough: true }) res: Response) {
-    clearAuthCookie(res);
+  @ApiOperation({
+    summary: 'Logout — clears auth cookies and revokes refresh token',
+  })
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const presented = (req as any).cookies?.refresh_token;
+    if (presented) {
+      await this.refreshTokenService.revokeToken(presented);
+    }
+    clearTokenPair(res);
     return { success: true };
   }
 

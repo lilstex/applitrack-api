@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'src/security/middleware/jwt.strategy';
 import { JobApplicationModule } from 'src/job-application/job-application.module';
 import { EmailModule } from 'src/providers/email/email.module';
+import { RefreshTokenService } from './service/refresh-token.service';
 
 @Module({
   imports: [
@@ -30,7 +31,13 @@ import { EmailModule } from 'src/providers/email/email.module';
     forwardRef(() => JobApplicationModule),
   ],
   controllers: [AuthController, ProfileController],
-  providers: [AuthService, ProfileService, JwtStrategy],
-  exports: [ProfileService, JwtStrategy, ProfileService, MongooseModule],
+  providers: [AuthService, ProfileService, JwtStrategy, RefreshTokenService],
+  exports: [
+    ProfileService,
+    JwtStrategy,
+    ProfileService,
+    MongooseModule,
+    RefreshTokenService,
+  ],
 })
 export class UserModule {}

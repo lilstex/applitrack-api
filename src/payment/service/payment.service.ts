@@ -36,6 +36,48 @@ export class PaymentService {
     });
   }
 
+  async getUserTransactions(
+    userId: string,
+    options: {
+      page?: number;
+      limit?: number;
+      type?: 'purchase' | 'usage';
+    } = {},
+  ) {
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(options.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = { user: userId };
+    if (options.type === 'purchase' || options.type === 'usage') {
+      filter.type = options.type;
+    }
+
+    const [items, total] = await Promise.all([
+      this.transactionModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.transactionModel.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit) || 1,
+    };
+  }
+
+  async getUserTransactionById(userId: string, transactionId: string) {
+    return this.transactionModel
+      .findOne({ _id: transactionId, user: userId })
+      .lean();
+  }
+
   async fulfillOrder(
     userId: string,
     amount: number,

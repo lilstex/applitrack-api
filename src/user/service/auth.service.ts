@@ -20,6 +20,7 @@ import {
   ResetPasswordDto,
   SignupDto,
 } from '../dto/auth.dto';
+import { RefreshTokenService } from './refresh-token.service';
 
 const DUMMY_BCRYPT_HASH =
   '$2b$10$CwTycUXWue0Thq9StjUM0uJ8gn0/lQ8RtIu1z9rB2RHk3vh2Y3w/u';
@@ -48,6 +49,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private refreshTokenService: RefreshTokenService,
   ) {}
 
   private hashToken(token: string): string {
@@ -61,6 +63,39 @@ export class AuthService {
   private isDisposable(email: string): boolean {
     const domain = email.split('@')[1];
     return domain ? DISPOSABLE_DOMAINS.has(domain) : false;
+  }
+
+  private async sendVerificationEmail(payload: {
+    fullName: string;
+    email: string;
+    rawToken?: string;
+  }) {
+    if (!payload.rawToken) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      await this.userModel.updateOne(
+        { email: payload.email },
+        {
+          emailVerificationToken: this.hashToken(rawToken),
+          emailVerificationExpiresAt: calculateExpirationDate(24),
+        },
+      );
+      payload.rawToken = rawToken;
+    }
+
+    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${payload.rawToken}`;
+    try {
+      await this.emailService.sendEmail({
+        to: payload.email,
+        from:
+          process.env.EMAIL_FROM || 'ShotNub<applitrack@shotnubsolutions.com>',
+        subject: 'Verify your AppliTrack account',
+        html: `<p>Hi ${payload.fullName},</p>
+               <p>Confirm your email by clicking the link below (expires in 24h):</p>
+               <p><a href="${verifyLink}">${verifyLink}</a></p>`,
+      });
+    } catch (err) {
+      this.logger.error('Failed to send verification email', err);
+    }
   }
 
   async signup(userData: SignupDto) {
@@ -104,39 +139,6 @@ export class AuthService {
     return {
       message: 'If the email is valid, a verification link has been sent.',
     };
-  }
-
-  private async sendVerificationEmail(payload: {
-    fullName: string;
-    email: string;
-    rawToken?: string;
-  }) {
-    if (!payload.rawToken) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
-      await this.userModel.updateOne(
-        { email: payload.email },
-        {
-          emailVerificationToken: this.hashToken(rawToken),
-          emailVerificationExpiresAt: calculateExpirationDate(24),
-        },
-      );
-      payload.rawToken = rawToken;
-    }
-
-    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${payload.rawToken}`;
-    try {
-      await this.emailService.sendEmail({
-        to: payload.email,
-        from:
-          process.env.EMAIL_FROM || 'ShotNub<applitrack@shotnubsolutions.com>',
-        subject: 'Verify your AppliTrack account',
-        html: `<p>Hi ${payload.fullName},</p>
-               <p>Confirm your email by clicking the link below (expires in 24h):</p>
-               <p><a href="${verifyLink}">${verifyLink}</a></p>`,
-      });
-    } catch (err) {
-      this.logger.error('Failed to send verification email', err);
-    }
   }
 
   async verifyEmail(token: string) {
@@ -268,6 +270,63 @@ export class AuthService {
     user.lockedUntil = null;
     await user.save();
 
+    await this.refreshTokenService.revokeAllForUser(String(user._id));
+
     return { success: true, message: 'Password reset successfully' };
+  }
+
+  async loginAndReturnUser(emailInput: string, password: string) {
+    const email = this.normaliseEmail(emailInput);
+    const user = await this.userModel.findOne({ email }).select('+password');
+
+    const hashToCheck = user?.password ?? DUMMY_BCRYPT_HASH;
+    const passwordValid = await bcrypt.compare(password, hashToCheck);
+
+    if (!user || !passwordValid) {
+      if (user) {
+        const updated = await this.userModel.findByIdAndUpdate(
+          user._id,
+          { $inc: { failedLoginAttempts: 1 } },
+          { new: true },
+        );
+        if (
+          updated &&
+          updated.failedLoginAttempts >= MAX_FAILED_LOGINS &&
+          !updated.lockedUntil
+        ) {
+          updated.lockedUntil = new Date(
+            Date.now() + LOCKOUT_MINUTES * 60 * 1000,
+          );
+          await updated.save();
+        }
+      }
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new UnauthorizedException(
+        'Account locked. Try again in a few minutes.',
+      );
+    }
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in.',
+      );
+    }
+    if (user.isActive === false) {
+      throw new UnauthorizedException('Account disabled. Contact support.');
+    }
+
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
+      await user.save();
+    }
+
+    return {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+    } as any;
   }
 }
