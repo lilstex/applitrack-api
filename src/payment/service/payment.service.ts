@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Transaction } from '../schema/transaction.schema';
 import { User } from 'src/user/schema/user.schema';
 import { CreateCreditPlanDto, UpdateCreditPlanDto } from '../dto/payment.dto';
@@ -48,7 +48,7 @@ export class PaymentService {
     const limit = Math.min(50, Math.max(1, Number(options.limit) || 10));
     const skip = (page - 1) * limit;
 
-    const filter: Record<string, any> = { user: userId };
+    const filter: Record<string, any> = { user: new Types.ObjectId(userId) };
     if (options.type === 'purchase' || options.type === 'usage') {
       filter.type = options.type;
     }
