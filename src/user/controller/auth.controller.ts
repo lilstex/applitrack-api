@@ -23,19 +23,26 @@ import {
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { TurnstileGuard } from 'src/security/guards/turnstile.guard';
 
-/**
- * Sets the JWT as an HttpOnly + Secure + SameSite cookie.
- * The browser will send it automatically; JS cannot read it (defeats XSS-based
- * token theft).
- */
 function setAuthCookie(res: Response, token: string) {
-  const isProd = process.env.NODE_ENV === 'production';
+  const useSecureCrossSite = process.env.COOKIE_SECURE === 'true';
+
   res.cookie('token', token, {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'strict' : 'lax',
+    secure: useSecureCrossSite,
+    sameSite: useSecureCrossSite ? 'none' : 'lax',
     domain: process.env.COOKIE_DOMAIN || undefined,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    path: '/',
+  });
+}
+
+function clearAuthCookie(res: Response) {
+  const useSecureCrossSite = process.env.COOKIE_SECURE === 'true';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: useSecureCrossSite,
+    sameSite: useSecureCrossSite ? 'none' : 'lax',
+    domain: process.env.COOKIE_DOMAIN || undefined,
     path: '/',
   });
 }
@@ -89,7 +96,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout — clears auth cookie' })
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('token', { path: '/' });
+    clearAuthCookie(res);
     return { success: true };
   }
 
