@@ -11,10 +11,17 @@ import { JwtStrategy } from 'src/security/middleware/jwt.strategy';
 import { JobApplicationModule } from 'src/job-application/job-application.module';
 import { EmailModule } from 'src/providers/email/email.module';
 import { RefreshTokenService } from './service/refresh-token.service';
+import {
+  RefreshToken,
+  RefreshTokenSchema,
+} from './schema/refresh-token.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: RefreshToken.name, schema: RefreshTokenSchema },
+    ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       global: true,
