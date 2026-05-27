@@ -10,6 +10,8 @@ import {
   Get,
   Query,
   UnauthorizedException,
+  Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from '../service/auth.service';
@@ -63,10 +65,19 @@ function clearTokenPair(res: Response) {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private authService: AuthService,
     private refreshTokenService: RefreshTokenService,
-  ) {}
+  ) {
+    if (typeof (this.authService as any).loginAndReturnUser !== 'function') {
+      this.logger.error(
+        'AuthService.loginAndReturnUser is undefined. Did you replace ' +
+          'auth.service.ts with the version that exposes it?',
+      );
+    }
+  }
 
   @Throttle({ long: { ttl: 3600000, limit: 3 } })
   @UseGuards(TurnstileGuard)
@@ -105,10 +116,23 @@ export class AuthController {
       loginDto.email,
       loginDto.password,
     );
-    const pair = await this.refreshTokenService.issueNewPair(user, {
-      userAgent: req.headers['user-agent'] as string | undefined,
-      ip: req.ip,
-    });
+
+    let pair: TokenPair;
+    try {
+      pair = await this.refreshTokenService.issueNewPair(user, {
+        userAgent: req.headers['user-agent'] as string | undefined,
+        ip: req.ip,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to mint refresh-token pair for user ${user?._id}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException(
+        'Could not establish session. Please try again.',
+      );
+    }
+
     setTokenPair(res, pair);
     return { role: user.role };
   }
@@ -147,7 +171,13 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const presented = (req as any).cookies?.refresh_token;
     if (presented) {
-      await this.refreshTokenService.revokeToken(presented);
+      try {
+        await this.refreshTokenService.revokeToken(presented);
+      } catch (err) {
+        this.logger.warn(
+          `Logout revoke failed (proceeding): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
     clearTokenPair(res);
     return { success: true };

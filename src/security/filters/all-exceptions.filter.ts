@@ -8,6 +8,13 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+function getAllowedOrigins(): string[] {
+  return (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -32,10 +39,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
           : ((res as any).message ?? exception.message);
     }
 
+    // Log full exception server-side only.
     this.logger.error(
       `${request.method} ${request.url} → ${status}`,
       exception instanceof Error ? exception.stack : String(exception),
     );
+
+    const origin = request.headers.origin;
+    if (origin && getAllowedOrigins().includes(origin)) {
+      response.setHeader('Access-Control-Allow-Origin', origin);
+      response.setHeader('Access-Control-Allow-Credentials', 'true');
+      response.setHeader('Vary', 'Origin');
+    }
 
     response.status(status).json({
       statusCode: status,
