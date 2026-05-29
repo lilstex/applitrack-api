@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -63,7 +64,6 @@ export class UpdateApplicationDto {
   companyName?: string;
 
   @ApiPropertyOptional({
-    example: 'Dear Hiring Manager...',
     description: 'The full AI-generated cover letter text',
   })
   @IsOptional()
@@ -72,32 +72,28 @@ export class UpdateApplicationDto {
 
   @ApiPropertyOptional({
     description:
-      'The complex CV data object containing summary, experience, skills, and education',
-    example: {
-      professionalSummary: 'Result-driven engineer...',
-      refinedExperience: [
-        {
-          role: 'Lead Dev',
-          company: 'Acme',
-          startDate: '2020',
-          endDate: '2022',
-          highlights: ['Led team'],
-        },
-      ],
-      relevantSkills: ['NodeJS', 'TypeScript'],
-      education: [{ degree: 'BSc', school: 'Uni', year: '2019' }],
-      certifications: [{ title: 'AWS Cert', issuer: 'Amazon', date: '2023' }],
-    },
+      'The full CV data object — all 8 sections (summary, experience, skills, ' +
+      'education, certifications, projects, languages, awards, volunteerWork)',
   })
   @IsOptional()
   @IsObject()
-  generatedCvData?: {
-    professionalSummary: string;
-    refinedExperience: any[];
-    relevantSkills: string[];
-    education: any[];
-    certifications: any[];
-  };
+  generatedCvData?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'The full proposal text (Upwork / freelance format)',
+  })
+  @IsOptional()
+  @IsString()
+  generatedProposal?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Proposal metadata: extracted JD instructions, questions, etc. ' +
+      'Generally set by the server, but accepted on PATCH for completeness.',
+  })
+  @IsOptional()
+  @IsObject()
+  proposalMetadata?: Record<string, any>;
 }
 
 export class UpdateStatusDto {
@@ -122,4 +118,43 @@ export class ApplicationResponseDto {
 
   @ApiProperty({ description: 'The MD5 hash of the job description' })
   jdHash: string;
+}
+
+export class GenerateProposalDto {
+  @ApiProperty({ example: 'Senior React Developer (Remote)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  title: string;
+
+  @ApiProperty({ example: 'Acme Co' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  company: string;
+
+  @ApiProperty({
+    example:
+      'We are looking for a senior React developer to help us migrate our legacy Angular app...',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(50, {
+    message: 'Job description must be at least 50 characters',
+  })
+  @MaxLength(20000)
+  description: string;
+}
+
+export class RegenerateProposalDto {
+  @ApiProperty({
+    required: false,
+    description:
+      'Optional override JD. If omitted, the application stored JD is used.',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(50)
+  @MaxLength(20000)
+  description?: string;
 }

@@ -24,15 +24,22 @@ export class PaymentService {
   async createTransaction(
     userId: string,
     companyName: string,
+    kind: 'cv' | 'proposal' = 'cv',
   ): Promise<Transaction> {
-    const COST_PER_CV = process.env.COST_PER_CV
+    const cost = process.env.COST_PER_CV
       ? parseInt(process.env.COST_PER_CV, 10)
       : 10;
-    return await this.transactionModel.create({
+
+    const description =
+      kind === 'proposal'
+        ? `Generated proposal for ${companyName}`
+        : `Optimized CV for ${companyName}`;
+
+    return this.transactionModel.create({
       user: userId,
-      credits: COST_PER_CV,
+      credits: cost,
       type: 'usage',
-      description: `Optimized CV for ${companyName}`,
+      description,
     });
   }
 

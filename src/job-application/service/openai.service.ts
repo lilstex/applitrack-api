@@ -64,6 +64,67 @@ export const CvResponseSchema = z.object({
   coverLetter: z.string(),
 });
 
+export const ProposalResponseSchema = z.object({
+  proposal: z
+    .string()
+    .describe(
+      'The full proposal text, ready to paste into Upwork / similar platforms. ' +
+        '250–500 words. Begins with any explicit instruction the JD specified.',
+    ),
+  metadata: z.object({
+    extractedInstructions: z
+      .array(z.string())
+      .describe(
+        'Explicit instructions found in the JD ("Start with the word BANANA", ' +
+          '"Include your hourly rate", "Reply with the answer to 2+2"). EMPTY ' +
+          'if the JD contains no such directives.',
+      ),
+    questionsToAnswer: z
+      .array(z.string())
+      .describe(
+        'Direct questions the client asked, that the proposal addresses. e.g. ' +
+          '"How many years of React experience do you have?" EMPTY if none.',
+      ),
+    requiredKeywords: z
+      .array(z.string())
+      .describe(
+        'Tech stack / domain keywords from the JD that appear in the proposal. ' +
+          'Used by the frontend to show coverage hints.',
+      ),
+    estimatedBudget: z
+      .string()
+      .nullable()
+      .describe(
+        'Budget hint detected in the JD, verbatim. e.g. "$500-1000", "fixed ' +
+          '$2000". NULL if not mentioned.',
+      ),
+    estimatedDuration: z
+      .string()
+      .nullable()
+      .describe(
+        'Duration hint detected in the JD, verbatim. e.g. "2 weeks", ' +
+          '"ongoing". NULL if not mentioned.',
+      ),
+    referencedProjects: z
+      .array(z.string())
+      .describe(
+        "Names of projects from the user's master profile that the proposal " +
+          'references as portfolio evidence. The proposal MUST link to project ' +
+          'URLs where available.',
+      ),
+    wordCount: z
+      .number()
+      .describe('Approximate word count of the proposal text.'),
+    instructionConfidence: z
+      .enum(['low', 'medium', 'high'])
+      .describe(
+        'high = JD had explicit directives that were followed verbatim. ' +
+          'medium = JD had implicit cues we addressed. ' +
+          'low = generic JD, best-judgement proposal.',
+      ),
+  }),
+});
+
 const ExperienceSchema = z.object({
   company: z.string().describe('The name of the company or organization'),
   role: z.string().describe('The job title or position held'),
@@ -430,6 +491,174 @@ ${jobDescription}
       throw new InternalServerErrorException(
         'Failed to extract data from PDF. Please try a different resume file.',
       );
+    }
+  }
+
+  async generateProposal(masterProfile: User, jobDescription: string) {
+    const COST_PER_PROPOSAL = process.env.COST_PER_CV
+      ? parseInt(process.env.COST_PER_CV)
+      : 10;
+
+    if (masterProfile.credits < COST_PER_PROPOSAL) {
+      throw new BadRequestException('Insufficient credits. Please top up.');
+    }
+
+    masterProfile.credits -= COST_PER_PROPOSAL;
+    await masterProfile.save();
+
+    try {
+      const prompt = `
+You are a senior freelance proposal writer with deep experience winning work on Upwork, Contra, Toptal, and similar platforms. You know what clients actually read, what they ignore, and what gets a proposal shortlisted vs deleted.
+ 
+# TASK
+Analyze the Job Description (JD) for explicit client instructions FIRST, then write a tailored proposal using the User's Master Profile.
+ 
+This is NOT a cover letter. A cover letter is read by HR after the resume is screened. A proposal is read first, in a list of 30+ competing proposals, by a busy client who decides in <10 seconds whether to keep reading.
+ 
+# PHASE 1 — INSTRUCTION EXTRACTION (CRITICAL)
+ 
+Scan the JD for these patterns and treat any matches as MANDATORY directives the proposal must obey:
+ 
+## Pattern A — Word-of-the-day / proof-of-reading filters
+- "Start your proposal with the word ___"
+- "Begin your reply with ___"
+- "If you've read this, include the word ___"
+- "Type X at the top of your proposal"
+- Math questions ("What is 2+2"), nonsense answers, codes
+ 
+If you find any of these, the proposal MUST start with the exact answer the client asked for. This is the single most common reason proposals get auto-rejected.
+ 
+## Pattern B — Direct questions
+- "How many years of experience with X do you have?"
+- "Have you worked with [tool/industry] before?"
+- "What is your hourly rate?"
+- "When can you start?"
+- "Show me an example of similar work"
+ 
+Answer each directly, near the top of the proposal. Don't make the client hunt.
+ 
+## Pattern C — Required disclosures
+- "Include 3 examples of your work"
+- "Send me your portfolio link"
+- "Mention your experience with X"
+- "Tell me about a similar project you've completed"
+ 
+Address each before pitching anything else.
+ 
+## Pattern D — Format / length requirements
+- "Keep it under 200 words"
+- "Don't send a template"
+- "No long bios"
+- "Be brief / detailed"
+ 
+Override the default length (250–500 words) if the client specified one.
+ 
+## Pattern E — Anti-templates / quality filters
+- "No copy-paste proposals"
+- "Show me you read this"
+- "Generic proposals will be ignored"
+ 
+When you see these, the proposal must include at least TWO specific references to details in the JD (technology, timeline, problem statement) that prove it was written for THIS job.
+ 
+If NONE of these patterns appear, the instructionConfidence is 'low' and the proposal uses best-judgement framing.
+ 
+# PHASE 2 — PROPOSAL CONSTRUCTION
+ 
+## Opening (line 1–2)
+- If a Phase 1 directive specifies the opening, USE IT VERBATIM. No exceptions.
+- Otherwise: a specific, evidence-based hook tied to a detail in the JD. Not "I'm interested in your project."
+ 
+## Body (3–6 short paragraphs OR a tight bullet list)
+- Answer Phase 1 questions in order they appeared.
+- Reference 1–3 projects from the master profile as portfolio evidence. If a project has a URL, embed it inline like: "I built [Project Name](https://url) which..."
+- Reference 1–2 relevant work experience entries — but only if directly applicable. Freelance proposals lean on portfolio more than employment history.
+- Quote the JD where it matters: if they said "we need someone who can handle X under deadline pressure", echo that phrase back.
+ 
+## Approach (optional, 1 short paragraph)
+- A 2–3 sentence sketch of how you'd tackle the work. NOT a full project plan. Just enough to show you've thought about it.
+- Skip this if the JD is for a simple task or the client signaled they want brevity.
+ 
+## Close (1 line, max 2)
+- Concrete next step. "Happy to share more samples — when works for a quick chat?" or "Available to start [specific timeframe]."
+- NEVER "Looking forward to hearing from you." (Generic. Filtered out.)
+ 
+# RULES OF THE PROFILE
+ 
+## Use what's there
+- The user's project list is their portfolio. Use it. Quote project NAMES and link to project URLs if available.
+- Their work experience is supporting evidence, not the main pitch.
+- Their skills list shows what they can claim without hedging.
+ 
+## Don't invent
+- Same truthfulness rules as the CV system. No invented metrics, scope, durations, or technologies.
+- If the JD asks for X and the user has Y (an adjacent tool), say so honestly. "I've worked extensively with Y, which shares the same core patterns as X — happy to walk through how that transfers."
+- Don't promise hourly rates the user didn't provide. If the JD asks for a rate and the user's profile doesn't mention one, the proposal acknowledges this: "Happy to discuss rate based on scope."
+ 
+## Voice
+- First person, conversational, confident.
+- No corporate hedging ("I believe I would be a strong candidate"). Just "I'd be a good fit because..."
+- Contractions are fine. This is freelance writing, not a formal letter.
+- Vary sentence length. A short punchy sentence after a longer one keeps it readable.
+ 
+# LENGTH
+- 250–500 words unless the JD specified otherwise.
+- Hard ceiling 800 words. If you're tempted to write more, you're padding.
+ 
+# PORTFOLIO LINKING RULES
+- If the master profile has projects with URLs, the proposal SHOULD include at least one inline link, using Markdown link syntax: [Project Name](https://url)
+- If multiple projects are relevant, link up to 3.
+- The platform (Upwork etc.) renders Markdown links as clickable. Plain URLs are fine but less polished.
+ 
+# OUTPUT FORMAT
+Return valid JSON matching the schema. The 'proposal' field is the user-facing text. The 'metadata' field is analysis — what instructions were found, what questions were answered, what projects were referenced.
+ 
+# PRE-OUTPUT SELF-CHECK
+- [ ] If the JD had a Phase 1 word-of-the-day directive, the proposal STARTS WITH IT VERBATIM.
+- [ ] Every Phase 1 question is answered somewhere in the proposal.
+- [ ] At least one project from the master profile is referenced (if any exist).
+- [ ] No invented metrics, technologies, or credentials.
+- [ ] The proposal does not exceed 800 words. Defaults to 250–500.
+- [ ] Closing line is a specific next step, not "looking forward to hearing from you."
+- [ ] If the JD said "no templates" or similar, at least 2 specifics from the JD appear in the proposal.
+ 
+# INPUT
+ 
+## USER MASTER PROFILE
+${JSON.stringify(masterProfile)}
+ 
+## JOB DESCRIPTION
+${jobDescription}
+`;
+
+      const response = await this.openai.chat.completions.parse({
+        model: 'gpt-4o-2024-08-06',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a senior freelance proposal writer who has reviewed 10,000+ winning Upwork proposals.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        response_format: zodResponseFormat(
+          ProposalResponseSchema,
+          'proposal_output',
+        ),
+      });
+
+      return response.choices[0].message.parsed;
+    } catch (error) {
+      // Refund on failure
+      await this.userModel.findByIdAndUpdate(masterProfile._id, {
+        $inc: { credits: COST_PER_PROPOSAL },
+      });
+
+      this.logger.error(
+        'OpenAI proposal generation failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      throw new InternalServerErrorException('Proposal generation failed');
     }
   }
 }

@@ -32,6 +32,8 @@ import {
 import {
   ApplicationResponseDto,
   GenerateCvDto,
+  GenerateProposalDto,
+  RegenerateProposalDto,
   UpdateApplicationDto,
   UpdateStatusDto,
 } from '../dto/application.dto';
@@ -131,6 +133,71 @@ export class ApplicationController {
     @Query('limit') limit: number = 10,
   ) {
     return this.appService.getUserApplications(req.user._id, page, limit);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Post('generate-proposal')
+  @ApiOperation({
+    summary:
+      'Generate a tailored Upwork-style proposal for a job. Creates a new ' +
+      'application record with the proposal attached.',
+  })
+  @ApiBody({ type: GenerateProposalDto })
+  async generateProposal(@Req() req, @Body() jobData: GenerateProposalDto) {
+    const userId = req.user._id;
+
+    const check = await this.appService.processJobApplication(userId, jobData);
+
+    if (check.isDuplicate) {
+      const existing = check.data as any;
+      if (existing.generatedProposal) {
+        return existing;
+      }
+      // Generate proposal and attach
+      const profile = await this.profileService.getProfile(userId);
+      const aiOutput = await this.aiService.generateProposal(
+        profile,
+        jobData.description,
+      );
+      existing.generatedProposal = aiOutput.proposal;
+      existing.proposalMetadata = aiOutput.metadata;
+      existing.lastProposalGeneratedAt = new Date();
+      await existing.save();
+      await this.paymentService.createTransaction(
+        userId,
+        jobData.company,
+        'proposal',
+      );
+      return existing;
+    }
+
+    // Fresh application
+    const { jdHash } = check as { isDuplicate: false; jdHash: string };
+    const profile = await this.profileService.getProfile(userId);
+
+    const aiOutput = await this.aiService.generateProposal(
+      profile,
+      jobData.description,
+    );
+
+    const saved = await this.appService.saveApplication({
+      user: userId,
+      rawJobDescription: jobData.description,
+      companyName: jobData.company,
+      jobTitle: jobData.title,
+      jdHash,
+      generatedProposal: aiOutput.proposal,
+      proposalMetadata: aiOutput.metadata,
+      lastProposalGeneratedAt: new Date(),
+    });
+
+    await this.paymentService.createTransaction(
+      userId,
+      jobData.company,
+      'proposal',
+    );
+    return saved;
   }
 
   @ApiBearerAuth()
@@ -294,6 +361,86 @@ export class ApplicationController {
     @Body() updateStatusDto: UpdateStatusDto,
   ) {
     return this.appService.updateStatus(id, updateStatusDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Post(':id/add-proposal')
+  @ApiOperation({
+    summary:
+      'Add a proposal to an existing application. Charges one usage credit.',
+  })
+  @ApiParam({ name: 'id' })
+  @ApiBody({ type: RegenerateProposalDto })
+  async addProposal(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: RegenerateProposalDto,
+  ) {
+    const userId = req.user._id;
+    const app = await this.appService.getById(id);
+    if (app.user.toString() !== userId.toString()) {
+      throw new ForbiddenException();
+    }
+
+    if ((app as any).generatedProposal) {
+      return app;
+    }
+
+    const profile = await this.profileService.getProfile(userId);
+    const jd = body.description ?? app.rawJobDescription;
+
+    const aiOutput = await this.aiService.generateProposal(profile, jd);
+
+    (app as any).generatedProposal = aiOutput.proposal;
+    (app as any).proposalMetadata = aiOutput.metadata;
+    (app as any).lastProposalGeneratedAt = new Date();
+    await app.save();
+
+    await this.paymentService.createTransaction(
+      userId,
+      app.companyName,
+      'proposal',
+    );
+    return app;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Post(':id/regenerate-proposal')
+  @ApiOperation({
+    summary:
+      'Regenerate the proposal for an application. Charges one usage credit.',
+  })
+  @ApiParam({ name: 'id' })
+  @ApiBody({ type: RegenerateProposalDto })
+  async regenerateProposal(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: RegenerateProposalDto,
+  ) {
+    const userId = req.user._id;
+    const app = await this.appService.getById(id);
+    if (app.user.toString() !== userId.toString()) {
+      throw new ForbiddenException();
+    }
+
+    const profile = await this.profileService.getProfile(userId);
+    const jd = body.description ?? app.rawJobDescription;
+
+    const aiOutput = await this.aiService.generateProposal(profile, jd);
+
+    (app as any).generatedProposal = aiOutput.proposal;
+    (app as any).proposalMetadata = aiOutput.metadata;
+    (app as any).lastProposalGeneratedAt = new Date();
+    await app.save();
+
+    await this.paymentService.createTransaction(
+      userId,
+      app.companyName,
+      'proposal',
+    );
+    return app;
   }
 
   @ApiBearerAuth()
