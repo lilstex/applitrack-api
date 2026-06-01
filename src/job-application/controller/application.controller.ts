@@ -32,6 +32,7 @@ import {
 import {
   ApplicationResponseDto,
   GenerateCvDto,
+  GenerateEmailDto,
   GenerateProposalDto,
   RegenerateProposalDto,
   UpdateApplicationDto,
@@ -115,6 +116,37 @@ export class ApplicationController {
       },
     });
 
+    if (jobData.generateEmail && jobData.emailTone) {
+      try {
+        const profile = await this.profileService.getProfile(userId);
+        const emailOutput = await this.aiService.generateEmail(
+          profile,
+          jobData.description,
+          {
+            tone: jobData.emailTone,
+            deliverableType: 'resume',
+            companyName: jobData.company,
+          },
+        );
+        (savedApp as any).generatedEmail = emailOutput.body;
+        (savedApp as any).emailMetadata = {
+          tone: emailOutput.tone,
+          subject: emailOutput.subject,
+          deliverableType: 'resume',
+          wordCount: emailOutput.wordCount,
+        };
+        (savedApp as any).lastEmailGeneratedAt = new Date();
+        await savedApp.save();
+        await this.paymentService.createTransaction(
+          userId,
+          jobData.company,
+          'email',
+        );
+      } catch (err) {
+        // Email is a non-blocking add-on. If it fails, we log the error but don't fail the whole request.
+      }
+    }
+
     await this.paymentService.createTransaction(userId, jobData.company);
     return savedApp;
   }
@@ -191,6 +223,38 @@ export class ApplicationController {
       proposalMetadata: aiOutput.metadata,
       lastProposalGeneratedAt: new Date(),
     });
+
+    if (jobData.generateEmail && jobData.emailTone) {
+      try {
+        const profile = await this.profileService.getProfile(userId);
+        const emailOutput = await this.aiService.generateEmail(
+          profile,
+          jobData.description,
+          {
+            tone: jobData.emailTone,
+            deliverableType: 'proposal',
+            companyName: jobData.company,
+          },
+        );
+        // `savedApp` here is either `existing` or `saved` depending on the branch
+        (saved as any).generatedEmail = emailOutput.body;
+        (saved as any).emailMetadata = {
+          tone: emailOutput.tone,
+          subject: emailOutput.subject,
+          deliverableType: 'proposal',
+          wordCount: emailOutput.wordCount,
+        };
+        (saved as any).lastEmailGeneratedAt = new Date();
+        await saved.save();
+        await this.paymentService.createTransaction(
+          userId,
+          jobData.company,
+          'email',
+        );
+      } catch (err) {
+        // Email generation is a non-blocking add-on. If it fails, we log the error but don't fail the whole request.
+      }
+    }
 
     await this.paymentService.createTransaction(
       userId,
@@ -439,6 +503,121 @@ export class ApplicationController {
       userId,
       app.companyName,
       'proposal',
+    );
+    return app;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Post(':id/generate-email')
+  @ApiOperation({
+    summary:
+      'Generate an email for an existing application. Charges COST_PER_EMAIL.',
+  })
+  @ApiParam({ name: 'id' })
+  @ApiBody({ type: GenerateEmailDto })
+  async generateEmailForApp(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: GenerateEmailDto,
+  ) {
+    const userId = req.user._id;
+    const app = await this.appService.getById(id);
+    if (app.user.toString() !== userId.toString()) {
+      throw new ForbiddenException();
+    }
+
+    if ((app as any).generatedEmail) {
+      return app;
+    }
+
+    const deliverableType: 'resume' | 'proposal' =
+      !(app as any).generatedCvData && (app as any).generatedProposal
+        ? 'proposal'
+        : 'resume';
+
+    const profile = await this.profileService.getProfile(userId);
+    const emailOutput = await this.aiService.generateEmail(
+      profile,
+      app.rawJobDescription,
+      {
+        tone: body.tone,
+        deliverableType,
+        companyName: app.companyName,
+      },
+    );
+
+    (app as any).generatedEmail = emailOutput.body;
+    (app as any).emailMetadata = {
+      tone: emailOutput.tone,
+      subject: emailOutput.subject,
+      deliverableType,
+      wordCount: emailOutput.wordCount,
+    };
+    (app as any).lastEmailGeneratedAt = new Date();
+    await app.save();
+
+    await this.paymentService.createTransaction(
+      userId,
+      app.companyName,
+      'email',
+    );
+    return app;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Post(':id/regenerate-email')
+  @ApiOperation({
+    summary:
+      'Regenerate the email for an application (e.g. switch tone). ' +
+      'Charges COST_PER_EMAIL.',
+  })
+  @ApiParam({ name: 'id' })
+  @ApiBody({ type: GenerateEmailDto })
+  async regenerateEmailForApp(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: GenerateEmailDto,
+  ) {
+    const userId = req.user._id;
+    const app = await this.appService.getById(id);
+    if (app.user.toString() !== userId.toString()) {
+      throw new ForbiddenException();
+    }
+
+    const previousMeta = (app as any).emailMetadata;
+    const deliverableType: 'resume' | 'proposal' =
+      previousMeta?.deliverableType ??
+      (!(app as any).generatedCvData && (app as any).generatedProposal
+        ? 'proposal'
+        : 'resume');
+
+    const profile = await this.profileService.getProfile(userId);
+    const emailOutput = await this.aiService.generateEmail(
+      profile,
+      app.rawJobDescription,
+      {
+        tone: body.tone,
+        deliverableType,
+        companyName: app.companyName,
+      },
+    );
+
+    (app as any).generatedEmail = emailOutput.body;
+    (app as any).emailMetadata = {
+      tone: emailOutput.tone,
+      subject: emailOutput.subject,
+      deliverableType,
+      wordCount: emailOutput.wordCount,
+    };
+    (app as any).lastEmailGeneratedAt = new Date();
+    await app.save();
+
+    await this.paymentService.createTransaction(
+      userId,
+      app.companyName,
+      'email',
     );
     return app;
   }

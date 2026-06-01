@@ -5,11 +5,9 @@ import { Document, Types } from 'mongoose';
 export class ApplicationHistory extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   user: Types.ObjectId;
-
   @Prop({ required: true }) jobTitle: string;
   @Prop({ required: true }) companyName: string;
   @Prop({ required: true }) rawJobDescription: string;
-
   @Prop({ required: true, index: true }) jdHash: string;
 
   @Prop({ type: Object })
@@ -46,7 +44,6 @@ export class ApplicationHistory extends Document {
       description: string;
     }>;
   };
-
   @Prop() generatedCoverLetter: string;
   @Prop() generatedProposal: string;
 
@@ -61,8 +58,17 @@ export class ApplicationHistory extends Document {
     wordCount: number;
     instructionConfidence: 'low' | 'medium' | 'high';
   };
-
   @Prop() lastProposalGeneratedAt: Date;
+
+  @Prop() generatedEmail: string;
+  @Prop({ type: Object })
+  emailMetadata: {
+    tone: 'direct' | 'warm';
+    subject: string;
+    deliverableType: 'resume' | 'proposal';
+    wordCount: number;
+  };
+  @Prop() lastEmailGeneratedAt: Date;
 
   @Prop({ default: 'standard-chronological' }) templateId: string;
   @Prop({ default: 'generated' }) status: string;

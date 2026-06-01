@@ -125,6 +125,25 @@ export const ProposalResponseSchema = z.object({
   }),
 });
 
+export const EmailResponseSchema = z.object({
+  subject: z
+    .string()
+    .describe(
+      'Email subject line. Under 60 characters. Names the role and the ' +
+        'sender. Avoid generic words like "Application" or "Resume" alone — ' +
+        'pair them with specifics.',
+    ),
+  body: z
+    .string()
+    .describe(
+      'Plain-text email body. Greeting + 2-3 SHORT paragraphs + sign-off. ' +
+        'Target 80 words, hard ceiling 120 words. The attachment line is ' +
+        'mandatory and explicit. No fluff phrases like "I hope this email ' +
+        'finds you well" or "I am writing to express my interest".',
+    ),
+  wordCount: z.number().describe('Approximate word count of the body.'),
+});
+
 const ExperienceSchema = z.object({
   company: z.string().describe('The name of the company or organization'),
   role: z.string().describe('The job title or position held'),
@@ -659,6 +678,170 @@ ${jobDescription}
       );
 
       throw new InternalServerErrorException('Proposal generation failed');
+    }
+  }
+
+  async generateEmail(
+    masterProfile: User,
+    jobDescription: string,
+    options: {
+      tone: 'direct' | 'warm';
+      deliverableType: 'resume' | 'proposal';
+      companyName?: string;
+    },
+  ) {
+    const COST_PER_EMAIL = 1;
+
+    if (masterProfile.credits < COST_PER_EMAIL) {
+      throw new BadRequestException('Insufficient credits. Please top up.');
+    }
+
+    masterProfile.credits -= COST_PER_EMAIL;
+    await masterProfile.save();
+
+    try {
+      const attachmentPhrase =
+        options.deliverableType === 'proposal'
+          ? 'My proposal is attached'
+          : 'My resume and tailored cover letter are attached';
+
+      const toneInstructions =
+        options.tone === 'direct'
+          ? `
+# TONE: DIRECT & CONFIDENT
+- Lead with relevance in line 1. No throat-clearing.
+- Statement of fit (not aspiration). "I'm a 5-year React dev" not "I aspire to be a React dev".
+- No hedging modals: avoid "I believe", "I think I would", "I feel that".
+- Contractions OK ("I've", "I'm", "you're").
+- The reader should know in 5 seconds whether you fit. No buried lede.
+`
+          : `
+# TONE: WARM & STORY-LED
+- Open with a one-sentence relatable hook tied to the JD. Examples:
+  "Saw your post about needing someone who's wrestled a legacy Angular codebase — that's a familiar fight."
+  "Your team's mention of late-stage migration headaches hit close to home."
+- After the hook, get to the relevance fast (line 2-3).
+- Slightly more personality than 'direct', but still ZERO fluff.
+- Avoid: "I came across your post", "I hope this finds you well",
+  "I was excited to see your opening".
+`;
+
+      const prompt = `
+You are a hiring manager who has read 10,000+ application emails and knows exactly which ones get past line 3. You're now writing one for someone who is genuinely qualified.
+ 
+# THE RULES THAT MATTER
+ 
+## BREVITY IS THE FEATURE
+HR / hiring managers skim. The average application email gets <8 seconds. If your email is longer than 120 words, it's been deleted before the recipient finished the first paragraph.
+ 
+Target: 80 words in the body. Hard ceiling: 120 words. Subject under 60 chars.
+ 
+## THE STRUCTURE
+1. Greeting (1 line) — "Hi {first name of hiring manager if mentioned in JD, else 'Hiring Team'},"
+2. Opening (1-2 sentences) — Defined by the tone block below.
+3. Relevance (1 short paragraph, 2-3 sentences) — Concrete claim of fit, ONE specific from the user's profile that maps to the JD.
+4. Attachment line — Use EXACTLY this phrase: "${attachmentPhrase}." Then ONE short sentence pointing to what's in it. e.g. "${attachmentPhrase}. It covers my work on the migration projects you'd find most relevant." Or for proposals: "${attachmentPhrase}. It addresses your timeline and the specific tools you mentioned."
+5. Close (1 line) — Concrete next step. "Open to a quick call next week if useful." NOT "Looking forward to hearing from you."
+6. Sign-off — "Best," or "Thanks," + the user's first name on next line + ONE contact channel (their phone OR email link, not both — they're already in the email From: header).
+ 
+## SUBJECT LINE
+- Under 60 characters.
+- Pattern: "{Role} — {User name}" OR "{Role} application — {1-word distinguishing trait} ({user name})"
+- Examples:
+  GOOD: "Senior React Dev — Jane Smith"
+  GOOD: "Backend role application — 8 years Postgres (Jane Smith)"
+  BAD: "Job Application" (generic)
+  BAD: "Re: opportunity" (looks like spam)
+ 
+${toneInstructions}
+ 
+# HARD RULES
+ 
+## NEVER USE THESE PHRASES
+- "I am writing to express my interest"
+- "I hope this email finds you well"
+- "Please find attached"  (use the mandated attachment phrase instead)
+- "Thank you for your time and consideration"
+- "I look forward to hearing from you"
+- "I believe I would be a great fit"
+- "I am excited about the opportunity"
+ 
+These are anti-signals. They mark the email as templated and trigger the
+deletion reflex.
+ 
+## NEVER INVENT
+- No fabricated years of experience, technologies the user doesn't have,
+  credentials they didn't earn, or specific past employers.
+- If you don't have a strong hook from the profile, use a weaker honest one
+  rather than a strong invented one.
+ 
+## ATTACHMENT LINE
+- MUST appear in the body. Verbatim phrase: "${attachmentPhrase}."
+- One short sentence after it pointing to what's in the deliverable.
+ 
+# OUTPUT FORMAT
+Return valid JSON matching the schema:
+- subject: under 60 chars
+- body: full email body INCLUDING greeting and sign-off, plain text only,
+  newlines as \\n\\n between paragraphs
+- wordCount: count of words in the body field
+ 
+# PRE-OUTPUT CHECKLIST
+- [ ] Body is ≤120 words.
+- [ ] Subject is ≤60 chars.
+- [ ] The attachment line "${attachmentPhrase}." appears in the body.
+- [ ] No banned phrases.
+- [ ] The opening matches the requested tone.
+- [ ] No invented facts.
+- [ ] Greeting on its own line, then blank line, then body, then blank line, then sign-off.
+ 
+# INPUT
+ 
+## USER MASTER PROFILE
+${JSON.stringify(masterProfile)}
+ 
+## JOB DESCRIPTION
+${jobDescription}
+ 
+## DELIVERABLE TYPE
+${options.deliverableType}
+ 
+## RECIPIENT COMPANY
+${options.companyName ?? '(not specified)'}
+`;
+
+      const response = await this.openai.chat.completions.parse({
+        model: 'gpt-4o-2024-08-06',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a senior hiring manager who has read 10,000+ application ' +
+              'emails. You know which ones get past line 3 and which ones get ' +
+              'deleted. Brevity is the feature.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        response_format: zodResponseFormat(EmailResponseSchema, 'email_output'),
+      });
+
+      return {
+        ...response.choices[0].message.parsed,
+        tone: options.tone,
+        deliverableType: options.deliverableType,
+      };
+    } catch (error) {
+      // Refund on failure
+      await this.userModel.findByIdAndUpdate(masterProfile._id, {
+        $inc: { credits: COST_PER_EMAIL },
+      });
+
+      this.logger.error(
+        'OpenAI email generation failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      throw new InternalServerErrorException('Email generation failed');
     }
   }
 }

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsObject,
@@ -18,82 +19,104 @@ export enum ApplicationStatus {
   REJECTED = 'rejected', // Application was not successful
 }
 
+export enum EmailTone {
+  DIRECT = 'direct',
+  WARM = 'warm',
+}
+
 export class GenerateCvDto {
-  @ApiProperty({
-    example: 'Senior Laravel Developer',
-    description: 'The title of the job you are applying for',
-  })
-  @IsString()
-  @IsNotEmpty()
-  title: string;
+  @ApiProperty() @IsString() @MinLength(1) title: string;
+  @ApiProperty() @IsString() @MinLength(1) company: string;
+  @ApiProperty() @IsString() @MinLength(50) description: string;
 
-  @ApiProperty({
-    example: 'Tech Solutions Malta',
-    description: 'The name of the hiring company',
+  @ApiPropertyOptional({
+    description:
+      'When true, also generate an application email and charge ' +
+      'COST_PER_EMAIL extra. Default false.',
+    default: false,
   })
-  @IsString()
-  @IsNotEmpty()
-  company: string;
+  @IsOptional()
+  @IsBoolean()
+  generateEmail?: boolean;
 
-  @ApiProperty({
-    example:
-      'We are looking for a backend engineer with 5+ years of experience in...',
-    description: 'The full job description text',
+  @ApiPropertyOptional({
+    enum: EmailTone,
+    description:
+      'Tone for the email. Required when generateEmail is true. ' +
+      "'direct' = confident and to-the-point. 'warm' = story-led, more personality.",
   })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(50)
-  description: string;
+  @IsOptional()
+  @IsEnum(EmailTone)
+  emailTone?: EmailTone;
+}
+
+export class GenerateProposalDto {
+  @ApiProperty() @IsString() @MinLength(1) title: string;
+  @ApiProperty() @IsString() @MinLength(1) company: string;
+  @ApiProperty() @IsString() @MinLength(50) description: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  generateEmail?: boolean;
+
+  @ApiPropertyOptional({ enum: EmailTone })
+  @IsOptional()
+  @IsEnum(EmailTone)
+  emailTone?: EmailTone;
+}
+
+export class GenerateEmailDto {
+  @ApiProperty({
+    enum: EmailTone,
+    description:
+      "Tone: 'direct' for confident & to-the-point, 'warm' for story-led.",
+  })
+  @IsEnum(EmailTone)
+  tone: EmailTone;
 }
 
 export class UpdateApplicationDto {
-  @ApiPropertyOptional({
-    example: 'Senior Backend Engineer',
-    description: 'The tailored job title',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   jobTitle?: string;
 
-  @ApiPropertyOptional({
-    example: 'Tech Solutions Inc.',
-    description: 'The name of the company',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   companyName?: string;
 
-  @ApiPropertyOptional({
-    description: 'The full AI-generated cover letter text',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   generatedCoverLetter?: string;
 
-  @ApiPropertyOptional({
-    description:
-      'The full CV data object — all 8 sections (summary, experience, skills, ' +
-      'education, certifications, projects, languages, awards, volunteerWork)',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
   generatedCvData?: Record<string, any>;
 
-  @ApiPropertyOptional({
-    description: 'The full proposal text (Upwork / freelance format)',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   generatedProposal?: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Proposal metadata: extracted JD instructions, questions, etc. ' +
-      'Generally set by the server, but accepted on PATCH for completeness.',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
   proposalMetadata?: Record<string, any>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  generatedEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  emailMetadata?: Record<string, any>;
 }
 
 export class UpdateStatusDto {
@@ -118,32 +141,6 @@ export class ApplicationResponseDto {
 
   @ApiProperty({ description: 'The MD5 hash of the job description' })
   jdHash: string;
-}
-
-export class GenerateProposalDto {
-  @ApiProperty({ example: 'Senior React Developer (Remote)' })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
-  title: string;
-
-  @ApiProperty({ example: 'Acme Co' })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
-  company: string;
-
-  @ApiProperty({
-    example:
-      'We are looking for a senior React developer to help us migrate our legacy Angular app...',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(50, {
-    message: 'Job description must be at least 50 characters',
-  })
-  @MaxLength(20000)
-  description: string;
 }
 
 export class RegenerateProposalDto {
