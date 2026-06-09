@@ -107,6 +107,14 @@ export class ForgotPasswordDto {
   turnstileToken?: string;
 }
 
+export class ResendVerificationDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  @MaxLength(254)
+  email: string;
+}
+
 export class LoginResponseDto {
   @ApiProperty({ example: 'user' })
   role: string;

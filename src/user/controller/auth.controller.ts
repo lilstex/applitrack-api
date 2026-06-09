@@ -20,6 +20,7 @@ import {
   ForgotPasswordDto,
   LoginDto,
   LoginResponseDto,
+  ResendVerificationDto,
   ResetPasswordDto,
   SignupDto,
 } from '../dto/auth.dto';
@@ -190,6 +191,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Forgot password' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Throttle({ long: { ttl: 3600000, limit: 3 } })
+  @UseGuards(TurnstileGuard)
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend the email verification link to an unverified user.',
+  })
+  @ApiBody({ type: ResendVerificationDto })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
   }
 
   @Throttle({ medium: { ttl: 60000, limit: 5 } })

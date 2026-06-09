@@ -118,6 +118,39 @@ export class AuthService {
     return user;
   }
 
+  private async sendVerificationEmail(payload: {
+    fullName: string;
+    email: string;
+    rawToken?: string;
+  }) {
+    if (!payload.rawToken) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      await this.userModel.updateOne(
+        { email: payload.email },
+        {
+          emailVerificationToken: this.hashToken(rawToken),
+          emailVerificationExpiresAt: calculateExpirationDate(24),
+        },
+      );
+      payload.rawToken = rawToken;
+    }
+
+    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${payload.rawToken}`;
+
+    try {
+      await this.emailService.sendVerificationEmail({
+        user: payload.fullName,
+        email: payload.email,
+        link: verifyLink,
+      });
+    } catch (err) {
+      this.logger.error(
+        'Failed to send verification email',
+        err instanceof Error ? err.stack : String(err),
+      );
+    }
+  }
+
   async signup(userData: SignupDto) {
     const email = this.normaliseEmail(userData.email);
 
@@ -163,39 +196,6 @@ export class AuthService {
     };
   }
 
-  private async sendVerificationEmail(payload: {
-    fullName: string;
-    email: string;
-    rawToken?: string;
-  }) {
-    if (!payload.rawToken) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
-      await this.userModel.updateOne(
-        { email: payload.email },
-        {
-          emailVerificationToken: this.hashToken(rawToken),
-          emailVerificationExpiresAt: calculateExpirationDate(24),
-        },
-      );
-      payload.rawToken = rawToken;
-    }
-
-    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${payload.rawToken}`;
-
-    try {
-      await this.emailService.sendVerificationEmail({
-        user: payload.fullName,
-        email: payload.email,
-        link: verifyLink,
-      });
-    } catch (err) {
-      this.logger.error(
-        'Failed to send verification email',
-        err instanceof Error ? err.stack : String(err),
-      );
-    }
-  }
-
   async verifyEmail(token: string) {
     if (!token) throw new BadRequestException('Missing token');
 
@@ -215,6 +215,31 @@ export class AuthService {
     await user.save();
 
     return { success: true, message: 'Email verified' };
+  }
+
+  async resendVerification(emailInput: string) {
+    const email = this.normaliseEmail(emailInput);
+
+    const user = await this.userModel.findOne({ email });
+
+    if (user && !user.isEmailVerified) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      user.emailVerificationToken = this.hashToken(rawToken);
+      user.emailVerificationExpiresAt = calculateExpirationDate(24);
+      await user.save();
+
+      await this.sendVerificationEmail({
+        fullName: user.fullName,
+        email: user.email,
+        rawToken,
+      });
+    }
+
+    return {
+      success: true,
+      message:
+        'If that account exists and needs verification, a fresh link is on its way.',
+    };
   }
 
   async login(emailInput: string, password: string) {
