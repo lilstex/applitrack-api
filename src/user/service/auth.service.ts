@@ -181,15 +181,12 @@ export class AuthService {
     }
 
     const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${payload.rawToken}`;
+
     try {
-      await this.emailService.sendEmail({
-        to: payload.email,
-        from:
-          process.env.EMAIL_FROM || 'ShotNub<applitrack@shotnubsolutions.com>',
-        subject: 'Verify your AppliTrack account',
-        html: `<p>Hi ${payload.fullName},</p>
-               <p>Confirm your email by clicking the link below (expires in 24h):</p>
-               <p><a href="${verifyLink}">${verifyLink}</a></p>`,
+      await this.emailService.sendVerificationEmail({
+        user: payload.fullName,
+        email: payload.email,
+        link: verifyLink,
       });
     } catch (err) {
       this.logger.error(

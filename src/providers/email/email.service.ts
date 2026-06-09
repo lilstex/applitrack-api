@@ -147,4 +147,29 @@ export class EmailService {
       };
     }
   }
+
+  async sendVerificationEmail(obj: any): Promise<any> {
+    try {
+      const { user, email, link, template = 'verify-email' } = obj;
+      const html = await this.renderTemplate(template, { email, user, link });
+      const data = await this.sendEmail({
+        from:
+          this.configService.get<string>('EMAIL_FROM') ||
+          'ShotNubSolutions<applitrack@shotnubsolutions.com>',
+        to: email,
+        subject: 'Verify your AppliTrack account',
+        html,
+      });
+      return { ...data };
+    } catch (error) {
+      this.logger.error(
+        'sendVerificationEmail failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+      return {
+        status: false,
+        message: 'Error occured while sending verification email',
+      };
+    }
+  }
 }
