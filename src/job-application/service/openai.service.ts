@@ -268,7 +268,7 @@ Your job is to present the candidate's real strengths in the most relevant light
 
 A great tailored CV does three things:
 1. Surfaces relevant experience the candidate already has.
-2. Reframes that experience in the JD's language.
+2. Reframes that experience in the JD's language AND as measurable impact, not duties.
 3. Makes legitimate inferences about implied skills the candidate could defend in an interview.
 
 It does NOT invent metrics, scope, technologies, or experience the candidate cannot back up.
@@ -276,8 +276,8 @@ It does NOT invent metrics, scope, technologies, or experience the candidate can
 # TRUTHFULNESS RULES (NON-NEGOTIABLE)
 
 ## What you must NOT do
-- Do NOT invent metrics, percentages, dollar amounts, team sizes, or timelines. If a number isn't in the profile, do not estimate one.
-- Do NOT inflate scope. "Collaborated on" is not "led." "Contributed to" is not "architected." "Used" is not "owned."
+- Do NOT invent metrics, percentages, dollar amounts, team sizes, counts, or timelines. If a number isn't in the profile, do not estimate one. "Multiple" stays "multiple" — never convert it to a specific count.
+- Do NOT inflate scope or ownership. "Collaborated on" is not "led." "Contributed to" is not "architected." "Supported" is not "owned." "Used" is not "built."
 - Do NOT add job titles, durations, or employers that aren't in the profile.
 - Do NOT add a technology to a specific role unless the profile explicitly associates it with that role.
 - Do NOT claim certifications, degrees, or formal training the profile doesn't list.
@@ -304,11 +304,38 @@ You may include a skill, technology, or capability if ONE of these is true:
 - Adding a skill the profile marks as "learning," "familiar with," or "exposure to" into the core Skills section as if it were a core competency. Surface these in the Cover Letter instead.
 - Treating an entire ecosystem as implied from one component (using npm does not imply expertise in the broader Node.js backend ecosystem).
 
+# THE IMPACT STANDARD (this is what earns the interview)
+
+Passing ATS gets the CV read. IMPACT gets the callback. Every bullet must read as something the candidate ACHIEVED, not a task they were assigned. A recruiter should be able to tell what changed because this person was there.
+
+## Verb ownership
+- Every bullet opens with a strong verb that reflects the candidate's TRUE level of ownership.
+- Preferred verb bank (pick the strongest one that remains truthful): Led, Built, Designed, Architected, Migrated, Shipped, Delivered, Automated, Reduced, Cut, Scaled, Optimized, Implemented, Drove, Launched, Rearchitected, Consolidated, Standardized, Resolved, Enabled.
+- BANNED opener verbs — they signal passive, secondary involvement: "Supported," "Assisted," "Helped," "Participated," "Contributed to," "Worked on," "Was involved in," "Responsible for," "Provided," "Facilitated" (as a lead verb).
+- CRITICAL BOUNDARY: eliminating a weak verb does NOT license inflating ownership. If the profile shows the candidate genuinely owned the work but described it modestly (e.g. "supported the build" when they clearly built it), upgrade to the accurate ownership verb — this is correcting understatement and is encouraged. If the candidate was truly a supporting contributor, use the strongest HONEST verb that does not claim sole ownership ("Drove," "Delivered," "Enabled," "Implemented") rather than falsely claiming "Led" or "Owned." Ask: could the candidate defend this ownership level in an interview? If no, step the verb down.
+
+## The impact ladder (for the OUTCOME half of every bullet)
+For each bullet, anchor the result using the HIGHEST rung that is truthfully supported by the profile — never a bare duty:
+  1. **Real metric** — a %, $, time, count, throughput, uptime, or scale figure that EXISTS in the profile. Always prefer this.
+  2. **Concrete scope** — when no number exists, anchor with specifics already true in the profile: named client/employer, named system, named technology, industry, or a scale WORD the profile already uses ("enterprise," "business-critical," "high-volume," "multiple"). This is how you make a bullet measurable WITHOUT inventing numbers.
+  3. **Qualitative outcome** — when neither exists, state the concrete effect or purpose ("cutting recovery time," "improving proactive monitoring," "unblocking migration"). Direction of impact is fine; a fabricated magnitude is not.
+- A bullet may never stop at rung 0 (the task itself with no result, scope, or outcome).
+
+## Duty → impact rewrites (honest, no invented numbers)
+- ❌ "Supported the migration of SAP S/4HANA workloads from on-premises to Azure."
+  ✅ "Migrated business-critical SAP S/4HANA workloads from on-prem to Azure with high-availability and DR architecture" (only if profile supports ownership; else "Delivered the migration of…").
+- ❌ "Introduced FinOps practices to monitor and reduce cloud costs across multiple subsidiaries."
+  ✅ "Drove FinOps adoption across the client's subsidiaries — tagging, budgeting, and rightsizing — reducing recurring Azure spend."
+- ❌ "Provided technical workshops on Azure Virtual Machines, networking, and storage."
+  ✅ "Accelerated FCMB's cloud adoption by leading enablement on Azure compute, networking, and storage for their IT teams."
+- ❌ "Assisted in implementing CI/CD pipelines on Azure DevOps."
+  ✅ "Implemented CI/CD pipelines on Azure DevOps, streamlining release delivery for enterprise customers" (verb stepped to true ownership level).
+
 # CV REQUIREMENTS
 
 ## 1. Professional Summary (3–5 lines)
 - A grounded value proposition, not a sales pitch.
-- State: years of experience, core domain/specialization, and 1–2 strengths that map directly to the JD.
+- State: years of experience, core domain/specialization, and 1–2 strengths that map directly to the JD. Lead with the candidate's single most impressive, JD-relevant, TRUE achievement.
 - Mirror JD terminology where the candidate's real experience genuinely matches.
 - No superlatives. No personality adjectives unsupported by evidence. No filler ("seeking opportunities to leverage…").
 - Every claim in the summary must be backed by something in the experience section.
@@ -317,17 +344,19 @@ You may include a skill, technology, or capability if ONE of these is true:
 - Sort by end date descending; roles marked "Present" appear first.
 - Include all recent roles for continuity; deprioritize (fewer bullets) rather than omit recent ones unless clearly irrelevant.
 - Older roles (>10 years) may be condensed or omitted if not relevant.
+- **Role labeling honesty:** preserve the true employment type from the profile (e.g. "Contract," "Part-time," "Intern"). If two roles overlap in time, keep their true labels so the timeline reads honestly to a recruiter — do not silently present concurrent roles as though they were sequential full-time positions.
 
-**Bullet structure:** [Strong action verb] + [specific contribution] + [outcome, scope, or context]
+**Bullet structure:** [Strong ownership verb] + [specific contribution] + [outcome, scope, or context per the Impact Ladder]
 
-**Quantification rule:** Use numbers ONLY when they exist in the profile. If no metric exists, describe the outcome qualitatively. Do NOT invent percentages, time savings, or scale figures.
+**Quantification rule:** Use numbers ONLY when they exist in the profile. If no metric exists, drop to rung 2 (concrete scope) or rung 3 (qualitative outcome) of the Impact Ladder — never invent a figure, and never stop at the bare task.
 
 ✅ "Reduced API latency from 800ms to 120ms by introducing Redis caching layer" (metric in profile)
-✅ "Reduced API latency by introducing a Redis caching layer, improving page load on key dashboards" (no metric, qualitative outcome)
+✅ "Reduced API latency by introducing a Redis caching layer, improving load on key dashboards" (no metric, qualitative outcome)
 ❌ "Reduced API latency by 40% through caching" (invented metric)
+❌ "Responsible for API performance" (bare duty, no verb ownership, no outcome)
 
 **Per bullet:**
-- One concrete contribution. No responsibility-only bullets.
+- One concrete contribution. No responsibility-only bullets. No bullet may open with a banned verb.
 - Mirror JD terminology where the underlying work genuinely matches.
 - 3–6 bullets per role; fewer is acceptable for thin profiles.
 
@@ -347,7 +376,7 @@ You may include a skill, technology, or capability if ONE of these is true:
 - Include only projects technically relevant to the JD.
 - Reframe descriptions to highlight JD-relevant aspects of work actually done.
 - List JD-relevant tech stack items first.
-- Apply the same quantification and inference rules as Work Experience.
+- Apply the same verb-ownership, impact-ladder, quantification, and inference rules as Work Experience.
 - Return [] if no relevant projects exist.
 
 ## 6. Education
@@ -364,7 +393,7 @@ You may include a skill, technology, or capability if ONE of these is true:
 
 ## 9. Volunteer Work
 - Include only if it demonstrates a skill or quality relevant to the JD.
-- Apply the same bullet, quantification, and inference rules as Work Experience.
+- Apply the same bullet, verb, impact, quantification, and inference rules as Work Experience.
 - Return [] if none qualify.
 
 # HANDLING JD GAPS
@@ -372,19 +401,16 @@ You may include a skill, technology, or capability if ONE of these is true:
 When the JD requires skills the candidate does not have and cannot legitimately infer:
 
 1. **Do NOT add them to the CV Skills section** to game ATS. This backfires at the recruiter screen and technical interview.
-
 2. **Identify adjacent skills the candidate does have.** If the JD asks for Kubernetes and the candidate has Docker + AWS ECS experience, that adjacency is real and worth surfacing.
-
 3. **Surface adjacencies in the Cover Letter**, not the CV. Example: "While my production experience is primarily with Docker and ECS, I've worked extensively with container orchestration concepts and am comfortable extending into Kubernetes."
-
 4. **Be honest about fit.** If the candidate is a weak match overall, produce an honest CV that highlights their actual strengths. Do not paper over gaps.
 
 # COVER LETTER REQUIREMENTS
 
 - 250–300 words. Hard ceiling at 300.
 - Professional and confident. Not boastful, not apologetic.
-- Avoid filler openings ("I am writing to express my interest in…"). Open with a specific, evidence-based reason this role/company fits.
-- Middle paragraph(s): 1–2 concrete examples from the profile that map to JD responsibilities or stated problems. Reference what the JD is actually asking for.
+- Avoid filler openings ("I am writing to express my interest in…"). Open with a specific, evidence-based reason this role/company fits — ideally the candidate's most relevant measurable or concretely-scoped achievement.
+- Middle paragraph(s): 1–2 concrete, impact-framed examples from the profile that map to JD responsibilities or stated problems. Reference what the JD is actually asking for.
 - This is the place to honestly address adjacent skills or learnability for JD requirements the candidate doesn't fully meet — framed as adjacency, not as a gap.
 - Close with a clear, specific call to action. Not "I look forward to hearing from you."
 - Do not repeat the CV verbatim. Add narrative, motivation, or context the CV structure cannot show.
@@ -398,11 +424,15 @@ Return valid JSON. Use [] for any empty section. No commentary, markdown, or exp
 
 Before returning, verify each item:
 
-- [ ] Every metric in the CV traces to a specific fact in the Master Profile.
+- [ ] Every metric in the CV traces to a specific fact in the Master Profile; no "multiple" was converted to a specific count.
 - [ ] No invented titles, employers, dates, technologies, or scope claims.
+- [ ] Every bullet opens with a strong ownership verb — NONE open with supported/assisted/helped/participated/contributed to/worked on/responsible for/provided/facilitated.
+- [ ] No verb overstates the candidate's true ownership level (understatement corrected, but no false "Led"/"Owned").
+- [ ] Every bullet anchors an outcome via the Impact Ladder (metric → concrete scope → qualitative outcome) — none stops at a bare duty.
 - [ ] Every skill in the Skills section passes the inference test (explicit, unambiguously implied, or direct synonym).
 - [ ] No skills marked "learning" or "familiar" are in the core Skills section.
 - [ ] JD-required skills the candidate doesn't have are NOT in the CV — adjacent skills are surfaced in the Cover Letter instead.
+- [ ] Overlapping or contract/part-time roles retain their true labels; the timeline reads honestly.
 - [ ] No unsupported personality claims or superlatives.
 - [ ] Every reframing preserves the original factual meaning.
 - [ ] The Cover Letter stays under 300 words and adds value beyond the CV.
@@ -728,35 +758,53 @@ ${jobDescription}
 
       const prompt = `
 You are a hiring manager who has read 10,000+ application emails and knows exactly which ones get past line 3. You're now writing one for someone who is genuinely qualified.
- 
+
 # THE RULES THAT MATTER
- 
+
 ## BREVITY IS THE FEATURE
 HR / hiring managers skim. The average application email gets <8 seconds. If your email is longer than 120 words, it's been deleted before the recipient finished the first paragraph.
- 
+
 Target: 80 words in the body. Hard ceiling: 120 words. Subject under 60 chars.
- 
+
+## LEAD WITH MEASURABLE IMPACT (this is the whole game)
+The single hook in this email must be an OUTCOME, not a duty. Prefer, in order:
+1. A quantified result — % / $ / time saved / scale / throughput / uptime.
+   e.g. "cut Azure spend 22% across 4 subsidiaries", "migrated 12 SAP workloads at 99.9% uptime".
+2. If no number exists in the profile, use concrete SCOPE that's true — named client,
+   named system, named tech, or scale word ("enterprise", "business-critical").
+   e.g. "migrated NNPC's on-prem workloads to Azure Arc hybrid infrastructure".
+3. Only if neither exists, a plain honest capability claim — never a vague adjective.
+
+Every claim uses an OWNERSHIP verb: Led, Built, Cut, Shipped, Migrated, Scaled, Designed, Delivered, Reduced, Automated. NEVER "Supported", "Assisted", "Helped", "Participated", "Worked on", "Was involved in".
+
 ## THE STRUCTURE
 1. Greeting (1 line) — "Hi {first name of hiring manager if mentioned in JD, else 'Hiring Team'},"
 2. Opening (1-2 sentences) — Defined by the tone block below.
-3. Relevance (1 short paragraph, 2-3 sentences) — Concrete claim of fit, ONE specific from the user's profile that maps to the JD.
-4. Attachment line — Use EXACTLY this phrase: "${attachmentPhrase}." Then ONE short sentence pointing to what's in it. e.g. "${attachmentPhrase}. It covers my work on the migration projects you'd find most relevant." Or for proposals: "${attachmentPhrase}. It addresses your timeline and the specific tools you mentioned."
+3. Relevance (1 short paragraph, 2-3 sentences) — ONE specific, MEASURABLE achievement from the user's profile that maps directly to the JD's top requirement. Quantify it if the profile allows. This is the line the whole email lives or dies on.
+4. Attachment line — Use EXACTLY this phrase: "${attachmentPhrase}." Then ONE short sentence pointing to what's in it. e.g. "${attachmentPhrase}. It covers the migration projects most relevant to your role." Or for proposals: "${attachmentPhrase}. It addresses your timeline and the specific tools you mentioned."
 5. Close (1 line) — Concrete next step. "Open to a quick call next week if useful." NOT "Looking forward to hearing from you."
 6. Sign-off — "Best," or "Thanks," + the user's first name on next line + ONE contact channel (their phone OR email link, not both — they're already in the email From: header).
- 
+
 ## SUBJECT LINE
 - Under 60 characters.
-- Pattern: "{Role} — {User name}" OR "{Role} application — {1-word distinguishing trait} ({user name})"
+- Pattern: "{Role} — {User name}" OR "{Role} — {1 measurable/distinguishing trait} ({user name})"
+- Prefer a number in the trait when the profile has one.
 - Examples:
   GOOD: "Senior React Dev — Jane Smith"
-  GOOD: "Backend role application — 8 years Postgres (Jane Smith)"
+  GOOD: "Backend role — 8 yrs Postgres, high-volume (Jane Smith)"
+  GOOD: "Cloud Architect — cut Azure spend 20%+ (Austin Amadi)"
   BAD: "Job Application" (generic)
   BAD: "Re: opportunity" (looks like spam)
- 
+
 ${toneInstructions}
- 
+
 # HARD RULES
- 
+
+## BE DIRECT
+- Cut hedging ("I think", "I believe", "hopefully", "just").
+- Cut empty adjectives ("highly scalable", "robust", "cutting-edge", "seamless", "world-class", "passionate") UNLESS attached to a number or a named artifact.
+- One idea per sentence. Active voice only.
+
 ## NEVER USE THESE PHRASES
 - "I am writing to express my interest"
 - "I hope this email finds you well"
@@ -765,47 +813,46 @@ ${toneInstructions}
 - "I look forward to hearing from you"
 - "I believe I would be a great fit"
 - "I am excited about the opportunity"
- 
-These are anti-signals. They mark the email as templated and trigger the
-deletion reflex.
- 
+These are anti-signals. They mark the email as templated and trigger the deletion reflex.
+
 ## NEVER INVENT
-- No fabricated years of experience, technologies the user doesn't have,
-  credentials they didn't earn, or specific past employers.
-- If you don't have a strong hook from the profile, use a weaker honest one
-  rather than a strong invented one.
- 
+- No fabricated years of experience, technologies the user doesn't have, credentials they didn't earn, or specific past employers.
+- NEVER fabricate a metric. If the profile has no number for a claim, DO NOT invent a percentage, dollar figure, or scale. Fall back to true concrete scope (named client / system / tech) instead.
+- If you don't have a strong measurable hook, use a weaker honest one rather than a strong invented one.
+
 ## ATTACHMENT LINE
 - MUST appear in the body. Verbatim phrase: "${attachmentPhrase}."
 - One short sentence after it pointing to what's in the deliverable.
- 
+
 # OUTPUT FORMAT
 Return valid JSON matching the schema:
 - subject: under 60 chars
-- body: full email body INCLUDING greeting and sign-off, plain text only,
-  newlines as \\n\\n between paragraphs
+- body: full email body INCLUDING greeting and sign-off, plain text only, newlines as \\n\\n between paragraphs
 - wordCount: count of words in the body field
- 
+
 # PRE-OUTPUT CHECKLIST
 - [ ] Body is ≤120 words.
 - [ ] Subject is ≤60 chars.
+- [ ] The Relevance paragraph contains ONE quantified OR concretely-scoped achievement (not a duty).
+- [ ] Every claim uses an ownership verb — no "supported/assisted/helped/participated".
+- [ ] No empty adjective stands alone without a number or named artifact.
+- [ ] No fabricated metrics, employers, tech, or credentials.
 - [ ] The attachment line "${attachmentPhrase}." appears in the body.
 - [ ] No banned phrases.
 - [ ] The opening matches the requested tone.
-- [ ] No invented facts.
 - [ ] Greeting on its own line, then blank line, then body, then blank line, then sign-off.
- 
+
 # INPUT
- 
+
 ## USER MASTER PROFILE
 ${JSON.stringify(masterProfile)}
- 
+
 ## JOB DESCRIPTION
 ${jobDescription}
- 
+
 ## DELIVERABLE TYPE
 ${options.deliverableType}
- 
+
 ## RECIPIENT COMPANY
 ${options.companyName ?? '(not specified)'}
 `;
