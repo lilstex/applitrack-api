@@ -25,6 +25,14 @@ export class RefreshTokenService {
   private readonly accessTtlSec: number;
   private readonly refreshTtlSec: number;
 
+  // Grace window during which a *just-replaced* refresh token can still be
+  // presented without being treated as theft. This is what makes concurrent
+  // refresh calls (a second open tab, a duplicate in-flight request, a
+  // background tab waking up) safe instead of nuking the whole session the
+  // instant two requests race each other with the same token.
+  private static readonly REUSE_GRACE_MS = 30_000;
+  private static readonly MAX_CHAIN_HOPS = 5;
+
   constructor(
     @InjectModel(RefreshToken.name)
     private readonly refreshTokenModel: Model<RefreshToken>,
@@ -32,7 +40,7 @@ export class RefreshTokenService {
     private readonly config: ConfigService,
   ) {
     this.accessTtlSec = parseInt(
-      this.config.get<string>('ACCESS_TOKEN_TTL_SEC') ?? '900',
+      this.config.get<string>('ACCESS_TOKEN_TTL_SEC') ?? '21600',
       10,
     );
     this.refreshTtlSec = parseInt(
@@ -57,7 +65,7 @@ export class RefreshTokenService {
     }
 
     const hash = this.hashToken(presentedToken);
-    const stored = await this.refreshTokenModel
+    let stored: any = await this.refreshTokenModel
       .findOne({ tokenHash: hash })
       .populate<{ user: User }>('user');
 
@@ -66,12 +74,29 @@ export class RefreshTokenService {
     }
 
     if (stored.replacedBy || stored.revokedAt) {
-      this.logger.warn(
-        `Refresh token reuse detected for user ${(stored.user as any)?._id} ` +
-          `family ${stored.family}. Revoking family.`,
-      );
-      await this.revokeFamily(stored.family);
-      throw new UnauthorizedException('Refresh token reuse detected');
+      const withinGrace =
+        !!stored.revokedAt &&
+        Date.now() - stored.revokedAt.getTime() <
+          RefreshTokenService.REUSE_GRACE_MS;
+
+      const latest = withinGrace
+        ? await this.resolveLatestInChain(stored.replacedBy)
+        : null;
+
+      if (!latest) {
+        this.logger.warn(
+          `Refresh token reuse detected for user ${(stored.user as any)?._id} ` +
+            `family ${stored.family}. Revoking family.`,
+        );
+        await this.revokeFamily(stored.family);
+        throw new UnauthorizedException('Refresh token reuse detected');
+      }
+
+      // A concurrent request already rotated this token moments ago (e.g. a
+      // second tab, or a duplicate in-flight call). Treat the presented
+      // token as still good and fast-forward to the current one instead of
+      // punishing a benign race.
+      stored = latest;
     }
 
     if (stored.expiresAt < new Date()) {
@@ -114,6 +139,30 @@ export class RefreshTokenService {
       { user: userId, revokedAt: null },
       { revokedAt: new Date() },
     );
+  }
+
+  /**
+   * Follow a `replacedBy` chain to the current, still-valid token, stopping
+   * after MAX_CHAIN_HOPS to bound the lookup. Returns null if the chain
+   * breaks (missing link) or ends on a token that's revoked with nothing
+   * newer within the grace window.
+   */
+  private async resolveLatestInChain(
+    replacedByHash: string | null | undefined,
+    hops = 0,
+  ): Promise<any | null> {
+    if (!replacedByHash || hops >= RefreshTokenService.MAX_CHAIN_HOPS) {
+      return null;
+    }
+
+    const next: any = await this.refreshTokenModel
+      .findOne({ tokenHash: replacedByHash })
+      .populate<{ user: User }>('user');
+
+    if (!next) return null;
+    if (!next.revokedAt) return next;
+
+    return this.resolveLatestInChain(next.replacedBy, hops + 1);
   }
 
   /**

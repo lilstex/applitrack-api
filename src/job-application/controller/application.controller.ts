@@ -355,7 +355,11 @@ export class ApplicationController {
       template || 'modern',
     );
 
-    const filename = `Resume_${(app.companyName || 'Application').replace(/\s+/g, '_')}.pdf`;
+    const filename = this.buildDownloadFilename(
+      profile.fullName,
+      app.jobTitle,
+      'resume',
+    );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -404,7 +408,11 @@ export class ApplicationController {
       app.jobTitle,
     );
 
-    const filename = `CoverLetter_${(app.companyName || 'Application').replace(/\s+/g, '_')}.pdf`;
+    const filename = this.buildDownloadFilename(
+      profile.fullName,
+      app.jobTitle,
+      'CoverLetter',
+    );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -656,6 +664,26 @@ export class ApplicationController {
   async remove(@Req() req, @Param('id') id: string) {
     await this.appService.deleteApplication(id, req.user._id);
     return { message: 'Application successfully deleted', deletedId: id };
+  }
+
+  /**
+   * e.g. buildDownloadFilename("Emmanuel Mbagwu", "Backend Engineer", "resume")
+   * -> "Emmanuel_Mbagwu_Backend_Engineer_resume.pdf"
+   */
+  private buildDownloadFilename(
+    fullName: string | undefined,
+    jobTitle: string | undefined,
+    suffix: 'resume' | 'CoverLetter',
+  ): string {
+    const sanitize = (value?: string) =>
+      (value ?? '')
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '_');
+
+    const parts = [sanitize(fullName), sanitize(jobTitle)].filter(Boolean);
+    const base = parts.length ? parts.join('_') : 'AppliTrack';
+    return `${base}_${suffix}.pdf`;
   }
 
   private async assertOwnership(appId: string, userId: string): Promise<void> {
