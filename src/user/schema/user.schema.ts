@@ -19,6 +19,8 @@ class Project {
   @Prop() url: string;
   @Prop([String]) techStack: string[];
   @Prop([String]) highlights: string[];
+  @Prop() problem: string;
+  @Prop() company: string;
 }
 
 @Schema({ timestamps: true })

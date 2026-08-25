@@ -47,6 +47,19 @@ export class ProjectDto {
   @IsArray()
   @IsString({ each: true })
   highlights?: string[];
+
+  @ApiPropertyOptional({
+    example:
+      'Manual asset tracking caused costly downtime for marine operators',
+  })
+  @IsOptional()
+  @IsString()
+  problem?: string;
+
+  @ApiPropertyOptional({ example: 'DPAnalytics' })
+  @IsOptional()
+  @IsString()
+  company?: string;
 }
 
 export class LanguageDto {

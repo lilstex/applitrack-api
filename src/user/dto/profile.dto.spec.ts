@@ -24,6 +24,27 @@ describe('ProjectDto', () => {
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'name')).toBe(true);
   });
+
+  it('passes with the optional problem and company fields', async () => {
+    const dto = plainToInstance(ProjectDto, {
+      name: 'BONGSERP',
+      description: 'Marine industry asset management platform',
+      problem:
+        'Manual asset tracking caused costly downtime for marine operators',
+      company: 'DPAnalytics',
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('passes when problem and company are omitted', async () => {
+    const dto = plainToInstance(ProjectDto, {
+      name: 'Personal Portfolio',
+      description: 'A personal site',
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
 });
 
 describe('LanguageDto', () => {

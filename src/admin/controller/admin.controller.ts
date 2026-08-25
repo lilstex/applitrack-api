@@ -44,7 +44,10 @@ export class AdminController {
   // ================= DASHBOARD =================
   @Get('dashboard')
   @ApiOperation({ summary: 'Get admin dashboard overview' })
-  @ApiResponse({ status: 200, description: 'Dashboard statistics retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard statistics retrieved successfully',
+  })
   getDashboard() {
     return this.adminService.getDashboard();
   }
@@ -54,8 +57,18 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all users (paginated + search + filter)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, example: 'emmanuel', description: 'Search by full name or email' })
-  @ApiQuery({ name: 'role', required: false, example: 'admin', description: 'Filter by role' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    example: 'emmanuel',
+    description: 'Search by full name or email',
+  })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    example: 'admin',
+    description: 'Filter by role',
+  })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   getUsers(@Query() query: GetUsersDto) {
     return this.adminService.getUsers(query);
@@ -75,7 +88,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Update user credits manually' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBody({ type: UpdateUserCreditsDto })
-  @ApiResponse({ status: 200, description: 'User credits updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User credits updated successfully',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   updateCredits(@Param('id') id: string, @Body() body: UpdateUserCreditsDto) {
     return this.adminService.updateUserCredits(id, body.credits);
@@ -101,7 +117,10 @@ export class AdminController {
 
   @Get('plans')
   @ApiOperation({ summary: 'Get all credit plans' })
-  @ApiResponse({ status: 200, description: 'Credit plans retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Credit plans retrieved successfully',
+  })
   getPlans() {
     return this.adminService.getPlans();
   }
@@ -119,7 +138,10 @@ export class AdminController {
   @Patch('plans/:id/toggle')
   @ApiOperation({ summary: 'Toggle credit plan active status' })
   @ApiParam({ name: 'id', description: 'Credit Plan ID' })
-  @ApiResponse({ status: 200, description: 'Credit plan status toggled successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Credit plan status toggled successfully',
+  })
   @ApiResponse({ status: 404, description: 'Plan not found' })
   togglePlan(@Param('id') id: string) {
     return this.adminService.togglePlan(id);
@@ -130,9 +152,21 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all transactions (filtered & paginated)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by user email/name or reference' })
-  @ApiQuery({ name: 'type', required: false, example: 'purchase', description: 'Filter by transaction type (purchase | usage)' })
-  @ApiResponse({ status: 200, description: 'Transactions retrieved successfully' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by user email/name or reference',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    example: 'purchase',
+    description: 'Filter by transaction type (purchase | usage)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transactions retrieved successfully',
+  })
   getTransactions(@Query() query: TransactionFilterDto) {
     return this.adminService.getTransactions(query);
   }
@@ -142,9 +176,20 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all application history (filtered)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by job title or company' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
-  @ApiResponse({ status: 200, description: 'Applications retrieved successfully' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by job title or company',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Applications retrieved successfully',
+  })
   getApplications(@Query() query: ApplicationFilterDto) {
     return this.adminService.getApplications(query);
   }

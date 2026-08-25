@@ -180,6 +180,24 @@ const ProjectSchema = z.object({
   url: z.string().nullable().describe('Project URL or repository link'),
   techStack: z.array(z.string()).describe('Technologies used'),
   highlights: z.array(z.string()).describe('Key achievements or features'),
+  problem: z
+    .string()
+    .nullable()
+    .describe(
+      'The problem this project solves, if stated or clearly implied in ' +
+        'the resume text (e.g. "reduces manual reporting time", "addresses ' +
+        'asset-tracking gaps in the marine industry"). NULL if not stated ' +
+        'or implied anywhere in the text — do not infer one from the ' +
+        'project name or tech stack alone.',
+    ),
+  company: z
+    .string()
+    .nullable()
+    .describe(
+      'The employer or organisation this project was built for/at, if ' +
+        'stated (e.g. "DPAnalytics"). NULL if the project is personal, ' +
+        'independent, or the employer is not mentioned.',
+    ),
 });
 
 const LanguageSchema = z.object({
@@ -273,6 +291,24 @@ A great tailored CV does three things:
 
 It does NOT invent metrics, scope, technologies, or experience the candidate cannot back up.
 
+# PROBLEM-SOLVER FRAMING (applies to Summary, Experience, and Projects)
+
+The candidate is not a list of duties — they are someone organizations bring in to solve specific problems. Every section of this CV should make a reader understand: what problem existed, what the candidate did about it, and what changed. This applies regardless of the candidate's job title or industry — a nurse reduces patient wait times, an accountant closes a reconciliation gap, a marketer fixes a broken lead funnel, a tradesperson solves a recurring equipment failure, an engineer replaces a slow manual process with automation. The pattern is universal: Problem → Action → Outcome.
+
+## Where to find the problem
+1. **Explicit** — the Master Profile states it directly (e.g. a project's \`problem\` field, or highlight/description text that names what was broken, slow, missing, risky, or costly).
+2. **Unambiguously implied** — the existing highlight or project description already implies the problem even without using the word (e.g. "built a dashboard to replace weekly spreadsheet reports" implies the problem was slow, manual, error-prone reporting).
+3. **Not stated anywhere** — if a bullet or project has no problem context in its own wording, do NOT invent one — this is a truthfulness violation exactly like a fabricated metric. Fall back to the existing Impact Ladder (concrete scope or qualitative outcome) instead.
+
+## How to write it
+- **Projects:** open the description with the problem, then the solution: "Built [X] to address [problem], focusing on [key areas]." If the project's \`company\` field is set, attribute it: "At [Company], built [X] to address [problem]..." When multiple projects share the same \`company\` value, you may open with one line naming the shared employer once, then give each project's problem and solution in turn — do not repeat the employer name in every project if they read better told together.
+- **Work Experience bullets:** when a highlight already carries problem context per the rules above, restructure it as [problem/why] + [ownership verb + action] + [outcome, from the Impact Ladder], instead of [ownership verb + action] + [outcome] alone.
+- **Professional Summary:** after stating years of experience and domain, name the CATEGORY of problems the candidate solves in that domain, grounded in what the Experience/Projects sections actually show — not aspirational language.
+
+## Calibration example (do not copy this content into output — it illustrates the pattern only)
+"At DPAnalytics, we built products to address problems across the industries we served: BONGSERP, addressing asset management, inventory, health & safety, procurement, and crew accommodation challenges in the marine industry; PersonalBuildManager (PBM), for construction and real-estate teams, to track development, plan construction, manage cost, minimize material wastage, and align developers with stakeholders."
+Notice: names the problem FIRST, the solution SECOND, and grounds both only in specifics that already exist in the profile — no invented client names, no invented metrics.
+
 # TRUTHFULNESS RULES (NON-NEGOTIABLE)
 
 ## What you must NOT do
@@ -337,6 +373,7 @@ For each bullet, anchor the result using the HIGHEST rung that is truthfully sup
 - A grounded value proposition, not a sales pitch.
 - State: years of experience, core domain/specialization, and 1–2 strengths that map directly to the JD. Lead with the candidate's single most impressive, JD-relevant, TRUE achievement.
 - Mirror JD terminology where the candidate's real experience genuinely matches.
+- Name the category of problems the candidate solves in their domain (see PROBLEM-SOLVER FRAMING above), grounded in the Experience/Projects sections — not aspirational language.
 - No superlatives. No personality adjectives unsupported by evidence. No filler ("seeking opportunities to leverage…").
 - Every claim in the summary must be backed by something in the experience section.
 
@@ -346,7 +383,7 @@ For each bullet, anchor the result using the HIGHEST rung that is truthfully sup
 - Older roles (>10 years) may be condensed or omitted if not relevant.
 - **Role labeling honesty:** preserve the true employment type from the profile (e.g. "Contract," "Part-time," "Intern"). If two roles overlap in time, keep their true labels so the timeline reads honestly to a recruiter — do not silently present concurrent roles as though they were sequential full-time positions.
 
-**Bullet structure:** [Strong ownership verb] + [specific contribution] + [outcome, scope, or context per the Impact Ladder]
+**Bullet structure:** [Problem/why, only if the profile provides or implies it] + [Strong ownership verb] + [specific contribution] + [outcome, scope, or context per the Impact Ladder]
 
 **Quantification rule:** Use numbers ONLY when they exist in the profile. If no metric exists, drop to rung 2 (concrete scope) or rung 3 (qualitative outcome) of the Impact Ladder — never invent a figure, and never stop at the bare task.
 
@@ -374,6 +411,7 @@ For each bullet, anchor the result using the HIGHEST rung that is truthfully sup
 
 ## 5. Projects
 - Include only projects technically relevant to the JD.
+- Apply PROBLEM-SOLVER FRAMING: open with the problem (from the project's \`problem\` field if present, otherwise from what the description's own wording already implies), then the solution, then impact via highlights, in one to two sentences. Use the \`company\` field to attribute the project to an employer when present.
 - Reframe descriptions to highlight JD-relevant aspects of work actually done.
 - List JD-relevant tech stack items first.
 - Apply the same verb-ownership, impact-ladder, quantification, and inference rules as Work Experience.
@@ -429,6 +467,7 @@ Before returning, verify each item:
 - [ ] Every bullet opens with a strong ownership verb — NONE open with supported/assisted/helped/participated/contributed to/worked on/responsible for/provided/facilitated.
 - [ ] No verb overstates the candidate's true ownership level (understatement corrected, but no false "Led"/"Owned").
 - [ ] Every bullet anchors an outcome via the Impact Ladder (metric → concrete scope → qualitative outcome) — none stops at a bare duty.
+- [ ] Every project or bullet with problem context available in the profile leads with that problem before the action/outcome; none invents a problem the profile doesn't support.
 - [ ] Every skill in the Skills section passes the inference test (explicit, unambiguously implied, or direct synonym).
 - [ ] No skills marked "learning" or "familiar" are in the core Skills section.
 - [ ] JD-required skills the candidate doesn't have are NOT in the CV — adjacent skills are surfaced in the Cover Letter instead.
@@ -619,7 +658,7 @@ If NONE of these patterns appear, the instructionConfidence is 'low' and the pro
  
 ## Body (3–6 short paragraphs OR a tight bullet list)
 - Answer Phase 1 questions in order they appeared.
-- Reference 1–3 projects from the master profile as portfolio evidence. If a project has a URL, embed it inline like: "I built [Project Name](https://url) which..."
+- Reference 1–3 projects from the master profile as portfolio evidence. For each one, state the problem it solved before describing what it does — this is what makes it evidence rather than a feature list (e.g. "I built [Project Name](https://url) to solve [problem] by..." — pull the problem from the project's \`problem\` field if set, or from what the description already implies; never invent a business problem the profile doesn't support). If a project has a URL, embed it inline as shown.
 - Reference 1–2 relevant work experience entries — but only if directly applicable. Freelance proposals lean on portfolio more than employment history.
 - Quote the JD where it matters: if they said "we need someone who can handle X under deadline pressure", echo that phrase back.
  
@@ -635,6 +674,7 @@ If NONE of these patterns appear, the instructionConfidence is 'low' and the pro
  
 ## Use what's there
 - The user's project list is their portfolio. Use it. Quote project NAMES and link to project URLs if available.
+- Client-facing proposals are read by people evaluating whether this person solves THEIR kind of problem — lead each project reference with the problem it addressed, not just its tech stack.
 - Their work experience is supporting evidence, not the main pitch.
 - Their skills list shows what they can claim without hedging.
  
@@ -665,6 +705,7 @@ Return valid JSON matching the schema. The 'proposal' field is the user-facing t
 - [ ] If the JD had a Phase 1 word-of-the-day directive, the proposal STARTS WITH IT VERBATIM.
 - [ ] Every Phase 1 question is answered somewhere in the proposal.
 - [ ] At least one project from the master profile is referenced (if any exist).
+- [ ] Every referenced project whose profile entry provides or implies a problem states that problem before its description; none invents a problem the profile doesn't support.
 - [ ] No invented metrics, technologies, or credentials.
 - [ ] The proposal does not exceed 800 words. Defaults to 250–500.
 - [ ] Closing line is a specific next step, not "looking forward to hearing from you."
@@ -775,6 +816,8 @@ The single hook in this email must be an OUTCOME, not a duty. Prefer, in order:
    e.g. "migrated NNPC's on-prem workloads to Azure Arc hybrid infrastructure".
 3. Only if neither exists, a plain honest capability claim — never a vague adjective.
 
+When the profile gives you the problem behind that achievement (explicitly, or unambiguously implied by the highlight's own wording), frame it as the problem you solved, not just the metric alone — e.g. "cut Azure spend 22% by fixing untracked sprawl across 4 subsidiaries" beats "cut Azure spend 22%" alone, because it shows what was broken. If no problem context exists anywhere in the profile for that achievement, do not invent one — use the metric or scope alone exactly as the existing rules already require.
+
 Every claim uses an OWNERSHIP verb: Led, Built, Cut, Shipped, Migrated, Scaled, Designed, Delivered, Reduced, Automated. NEVER "Supported", "Assisted", "Helped", "Participated", "Worked on", "Was involved in".
 
 ## THE STRUCTURE
@@ -834,6 +877,7 @@ Return valid JSON matching the schema:
 - [ ] Body is ≤120 words.
 - [ ] Subject is ≤60 chars.
 - [ ] The Relevance paragraph contains ONE quantified OR concretely-scoped achievement (not a duty).
+- [ ] If the profile gives problem context for that achievement, the Relevance paragraph names the problem, not just the metric alone — and never invents one where the profile has none.
 - [ ] Every claim uses an ownership verb — no "supported/assisted/helped/participated".
 - [ ] No empty adjective stands alone without a number or named artifact.
 - [ ] No fabricated metrics, employers, tech, or credentials.

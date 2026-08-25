@@ -12,12 +12,18 @@ export class PaginationDto {
 }
 
 export class GetUsersDto extends PaginationDto {
-  @ApiPropertyOptional({ example: 'emmanuel', description: 'Search by full name or email' })
+  @ApiPropertyOptional({
+    example: 'emmanuel',
+    description: 'Search by full name or email',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ example: 'admin', description: 'Filter by role (user | admin)' })
+  @ApiPropertyOptional({
+    example: 'admin',
+    description: 'Filter by role (user | admin)',
+  })
   @IsOptional()
   @IsString()
   role?: string;
@@ -65,7 +71,9 @@ export class TransactionFilterDto extends PaginationDto {
   @IsOptional()
   type?: string;
 
-  @ApiPropertyOptional({ description: 'Search by user name/email or reference' })
+  @ApiPropertyOptional({
+    description: 'Search by user name/email or reference',
+  })
   @IsOptional()
   @IsString()
   search?: string;
