@@ -30,9 +30,9 @@ export interface RemixResult {
   data: RemixedCvData | null; // null = confidence too low, call OpenAI
 }
 
-const CONFIDENCE_THRESHOLD = 50;
+const CONFIDENCE_THRESHOLD = 5;
 
-const MAX_APPLICATIONS_TO_SCAN = 20;
+const MAX_APPLICATIONS_TO_SCAN = 0;
 
 /**
  * Extracts a normalised set of meaningful keywords from a job description.
